@@ -1,12 +1,5 @@
-/* =====================================================
-   INDONESIA STOCK COMPARISON
-   V1 JAVASCRIPT
-===================================================== */
-
-
 const API_URL =
     "https://indonesia-stock-comparison.sayyid-syafiq136.workers.dev";
-
 
 
 /* =====================================================
@@ -32,7 +25,8 @@ function formatNumber(number) {
 
     if (
         number === null ||
-        number === undefined
+        number === undefined ||
+        number === ""
     ) {
         return "Data tidak tersedia";
     }
@@ -45,7 +39,8 @@ function formatPercent(number) {
 
     if (
         number === null ||
-        number === undefined
+        number === undefined ||
+        number === ""
     ) {
         return "Data tidak tersedia";
     }
@@ -53,6 +48,24 @@ function formatPercent(number) {
     return Number(number).toFixed(2) + "%";
 }
 
+
+function formatChange(number) {
+
+    if (
+        number === null ||
+        number === undefined
+    ) {
+        return "Data tidak tersedia";
+    }
+
+    const value = Number(number);
+
+    if (value > 0) {
+        return "+" + value.toLocaleString("id-ID");
+    }
+
+    return value.toLocaleString("id-ID");
+}
 
 
 /* =====================================================
@@ -62,7 +75,7 @@ function formatPercent(number) {
 async function getStockData(ticker) {
 
     const response = await fetch(
-        `${API_URL}/?symbol=${encodeURIComponent(ticker)}`
+        `${API_URL}/?symbol=${encodeURIComponent(ticker)}&type=summary`
     );
 
     const data = await response.json();
@@ -79,7 +92,6 @@ async function getStockData(ticker) {
 }
 
 
-
 /* =====================================================
    UI HELPERS
 ===================================================== */
@@ -91,6 +103,8 @@ function setStatus(
 
     const status =
         document.getElementById("status");
+
+    if (!status) return;
 
     status.textContent = message;
 
@@ -109,6 +123,8 @@ function setLoading(isLoading) {
 
     const buttonText =
         document.getElementById("buttonText");
+
+    if (!button || !buttonText) return;
 
     if (isLoading) {
 
@@ -143,6 +159,339 @@ function getTickerLogo(symbol) {
 }
 
 
+/* =====================================================
+   APPLY STOCK DATA
+===================================================== */
+
+function displayStock(
+    stock,
+    number
+) {
+
+    const suffix =
+        number === 1 ? "1" : "2";
+
+
+    /* ================================================
+       BASIC INFORMATION
+    ================================================ */
+
+    const name =
+        document.getElementById(
+            `name${suffix}`
+        );
+
+    const ticker =
+        document.getElementById(
+            `ticker${suffix}`
+        );
+
+    const logo =
+        document.getElementById(
+            `logo${suffix}`
+        );
+
+    const price =
+        document.getElementById(
+            `price${suffix}`
+        );
+
+
+    if (name) {
+
+        name.textContent =
+            stock.name ||
+            "Unknown Company";
+
+    }
+
+
+    if (ticker) {
+
+        ticker.textContent =
+            stock.symbol || "---";
+
+    }
+
+
+    if (logo) {
+
+        logo.textContent =
+            getTickerLogo(
+                stock.symbol
+            );
+
+    }
+
+
+    if (price) {
+
+        price.textContent =
+            formatRupiah(
+                stock.price
+            );
+
+    }
+
+
+    /* ================================================
+       CHANGE
+    ================================================ */
+
+    const changeElement =
+        document.getElementById(
+            `change${suffix}`
+        );
+
+
+    if (changeElement) {
+
+        const change =
+            stock.change ?? null;
+
+        const percent =
+            stock.changePercent ?? null;
+
+
+        if (
+            change === null ||
+            percent === null
+        ) {
+
+            changeElement.textContent =
+                "Data tidak tersedia";
+
+        } else {
+
+            const sign =
+                change > 0
+                    ? "+"
+                    : "";
+
+            changeElement.textContent =
+                `${sign}${formatRupiah(change)} (${sign}${formatPercent(percent)})`;
+
+            changeElement.classList.remove(
+                "positive",
+                "negative"
+            );
+
+
+            if (change > 0) {
+
+                changeElement.classList.add(
+                    "positive"
+                );
+
+            } else if (change < 0) {
+
+                changeElement.classList.add(
+                    "negative"
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /* ================================================
+       EXTRA TRADING DATA
+    ================================================ */
+
+    const volume =
+        document.getElementById(
+            `volume${suffix}`
+        );
+
+    const value =
+        document.getElementById(
+            `value${suffix}`
+        );
+
+    const frequency =
+        document.getElementById(
+            `frequency${suffix}`
+        );
+
+    const high =
+        document.getElementById(
+            `high${suffix}`
+        );
+
+    const low =
+        document.getElementById(
+            `low${suffix}`
+        );
+
+
+    if (volume) {
+
+        volume.textContent =
+            formatNumber(
+                stock.volume
+            );
+
+    }
+
+
+    if (value) {
+
+        value.textContent =
+            formatRupiah(
+                stock.value
+            );
+
+    }
+
+
+    if (frequency) {
+
+        frequency.textContent =
+            formatNumber(
+                stock.frequency
+            );
+
+    }
+
+
+    if (high) {
+
+        high.textContent =
+            formatRupiah(
+                stock.high
+            );
+
+    }
+
+
+    if (low) {
+
+        low.textContent =
+            formatRupiah(
+                stock.low
+            );
+
+    }
+
+
+    /* ================================================
+       BID / OFFER
+    ================================================ */
+
+    const bid =
+        document.getElementById(
+            `bid${suffix}`
+        );
+
+    const offer =
+        document.getElementById(
+            `offer${suffix}`
+        );
+
+
+    if (bid) {
+
+        bid.textContent =
+            formatRupiah(
+                stock.bid
+            );
+
+    }
+
+
+    if (offer) {
+
+        offer.textContent =
+            formatRupiah(
+                stock.offer
+            );
+
+    }
+
+
+    /* ================================================
+       FOREIGN FLOW
+    ================================================ */
+
+    const foreignBuy =
+        document.getElementById(
+            `foreignBuy${suffix}`
+        );
+
+    const foreignSell =
+        document.getElementById(
+            `foreignSell${suffix}`
+        );
+
+
+    if (foreignBuy) {
+
+        foreignBuy.textContent =
+            formatNumber(
+                stock.foreignBuy
+            );
+
+    }
+
+
+    if (foreignSell) {
+
+        foreignSell.textContent =
+            formatNumber(
+                stock.foreignSell
+            );
+
+    }
+
+
+    /* ================================================
+       OLD V1 METRICS
+       Fundamental belum tersedia
+    ================================================ */
+
+    const dividend =
+        document.getElementById(
+            `dividend${suffix}`
+        );
+
+    const per =
+        document.getElementById(
+            `per${suffix}`
+        );
+
+    const pbv =
+        document.getElementById(
+            `pbv${suffix}`
+        );
+
+
+    if (dividend) {
+
+        dividend.textContent =
+            "Belum tersedia";
+
+    }
+
+
+    if (per) {
+
+        per.textContent =
+            "Belum tersedia";
+
+    }
+
+
+    if (pbv) {
+
+        pbv.textContent =
+            "Belum tersedia";
+
+    }
+
+}
+
 
 /* =====================================================
    COMPARE STOCKS
@@ -166,8 +515,9 @@ async function compareStocks() {
             .trim();
 
 
-
-    /* VALIDATION */
+    /* ================================================
+       VALIDATION
+    ================================================ */
 
     if (!ticker1 || !ticker2) {
 
@@ -191,14 +541,12 @@ async function compareStocks() {
     }
 
 
-
     setLoading(true);
 
     setStatus(
         "Mengambil data saham...",
         "loading"
     );
-
 
 
     try {
@@ -215,184 +563,159 @@ async function compareStocks() {
         ]);
 
 
-
-        /* =================================================
+        /* ============================================
            SHOW RESULT
-        ================================================= */
+        ============================================ */
 
-        document
-            .getElementById("result")
-            .classList.remove("hidden");
+        const result =
+            document.getElementById(
+                "result"
+            );
 
-
-        document
-            .getElementById("comparison")
-            .classList.remove("hidden");
-
-
-
-        /* =================================================
-           STOCK 1
-        ================================================= */
-
-        document
-            .getElementById("name1")
-            .textContent =
-            stock1.name || "Unknown Company";
+        const comparison =
+            document.getElementById(
+                "comparison"
+            );
 
 
-        document
-            .getElementById("ticker1")
-            .textContent =
-            stock1.symbol || ticker1;
+        if (result) {
+
+            result.classList.remove(
+                "hidden"
+            );
+
+        }
 
 
-        document
-            .getElementById("logo1")
-            .textContent =
-            getTickerLogo(stock1.symbol);
+        if (comparison) {
+
+            comparison.classList.remove(
+                "hidden"
+            );
+
+        }
 
 
-        document
-            .getElementById("price1")
-            .textContent =
-            formatRupiah(stock1.price);
+        /* ============================================
+           DISPLAY STOCKS
+        ============================================ */
+
+        displayStock(
+            stock1,
+            1
+        );
 
 
-        document
-            .getElementById("dividend1")
-            .textContent =
-            "Belum tersedia";
+        displayStock(
+            stock2,
+            2
+        );
 
 
-        document
-            .getElementById("per1")
-            .textContent =
-            "Belum tersedia";
+        /* ============================================
+           COMPARISON TABLE
+        ============================================ */
+
+        const tableTicker1 =
+            document.getElementById(
+                "tableTicker1"
+            );
+
+        const tableTicker2 =
+            document.getElementById(
+                "tableTicker2"
+            );
 
 
-        document
-            .getElementById("pbv1")
-            .textContent =
-            "Belum tersedia";
+        const tablePrice1 =
+            document.getElementById(
+                "tablePrice1"
+            );
+
+        const tablePrice2 =
+            document.getElementById(
+                "tablePrice2"
+            );
 
 
+        if (tableTicker1) {
 
-        /* =================================================
-           STOCK 2
-        ================================================= */
+            tableTicker1.textContent =
+                stock1.symbol;
 
-        document
-            .getElementById("name2")
-            .textContent =
-            stock2.name || "Unknown Company";
+        }
 
 
-        document
-            .getElementById("ticker2")
-            .textContent =
-            stock2.symbol || ticker2;
+        if (tableTicker2) {
+
+            tableTicker2.textContent =
+                stock2.symbol;
+
+        }
 
 
-        document
-            .getElementById("logo2")
-            .textContent =
-            getTickerLogo(stock2.symbol);
+        if (tablePrice1) {
+
+            tablePrice1.textContent =
+                formatRupiah(
+                    stock1.price
+                );
+
+        }
 
 
-        document
-            .getElementById("price2")
-            .textContent =
-            formatRupiah(stock2.price);
+        if (tablePrice2) {
+
+            tablePrice2.textContent =
+                formatRupiah(
+                    stock2.price
+                );
+
+        }
 
 
-        document
-            .getElementById("dividend2")
-            .textContent =
-            "Belum tersedia";
+        /* ============================================
+           V1 FUNDAMENTAL PLACEHOLDERS
+        ============================================ */
+
+        [
+            "Dividend",
+            "Per",
+            "Pbv"
+        ].forEach(metric => {
+
+            const element1 =
+                document.getElementById(
+                    `table${metric}1`
+                );
+
+            const element2 =
+                document.getElementById(
+                    `table${metric}2`
+                );
 
 
-        document
-            .getElementById("per2")
-            .textContent =
-            "Belum tersedia";
+            if (element1) {
+
+                element1.textContent =
+                    "Belum tersedia";
+
+            }
 
 
-        document
-            .getElementById("pbv2")
-            .textContent =
-            "Belum tersedia";
+            if (element2) {
+
+                element2.textContent =
+                    "Belum tersedia";
+
+            }
+
+        });
 
 
-
-        /* =================================================
-           TABLE
-        ================================================= */
-
-        document
-            .getElementById("tableTicker1")
-            .textContent =
-            stock1.symbol;
-
-
-        document
-            .getElementById("tableTicker2")
-            .textContent =
-            stock2.symbol;
-
-
-        document
-            .getElementById("tablePrice1")
-            .textContent =
-            formatRupiah(stock1.price);
-
-
-        document
-            .getElementById("tablePrice2")
-            .textContent =
-            formatRupiah(stock2.price);
-
-
-        document
-            .getElementById("tableDividend1")
-            .textContent =
-            "Belum tersedia";
-
-
-        document
-            .getElementById("tableDividend2")
-            .textContent =
-            "Belum tersedia";
-
-
-        document
-            .getElementById("tablePer1")
-            .textContent =
-            "Belum tersedia";
-
-
-        document
-            .getElementById("tablePer2")
-            .textContent =
-            "Belum tersedia";
-
-
-        document
-            .getElementById("tablePbv1")
-            .textContent =
-            "Belum tersedia";
-
-
-        document
-            .getElementById("tablePbv2")
-            .textContent =
-            "Belum tersedia";
-
-
-
-        /* =================================================
+        /* ============================================
            SUCCESS
-        ================================================= */
+        ============================================ */
 
         setStatus(
             `Perbandingan ${stock1.symbol} vs ${stock2.symbol} berhasil dibuat.`,
@@ -400,14 +723,18 @@ async function compareStocks() {
         );
 
 
-        /* Scroll ke hasil */
+        /* ============================================
+           SCROLL
+        ============================================ */
 
-        document
-            .getElementById("result")
-            .scrollIntoView({
+        if (result) {
+
+            result.scrollIntoView({
                 behavior: "smooth",
                 block: "start"
             });
+
+        }
 
 
     } catch (error) {
@@ -422,44 +749,66 @@ async function compareStocks() {
     } finally {
 
         setLoading(false);
-    }
-}
 
+    }
+
+}
 
 
 /* =====================================================
    ENTER KEY
 ===================================================== */
 
-document
-    .getElementById("stock1")
-    .addEventListener(
+const stock1Input =
+    document.getElementById(
+        "stock1"
+    );
+
+
+const stock2Input =
+    document.getElementById(
+        "stock2"
+    );
+
+
+if (stock1Input) {
+
+    stock1Input.addEventListener(
         "keydown",
         function(event) {
 
             if (event.key === "Enter") {
 
-                document
-                    .getElementById("stock2")
-                    .focus();
+                if (stock2Input) {
+
+                    stock2Input.focus();
+
+                }
+
             }
+
         }
     );
 
+}
 
-document
-    .getElementById("stock2")
-    .addEventListener(
+
+if (stock2Input) {
+
+    stock2Input.addEventListener(
         "keydown",
         function(event) {
 
             if (event.key === "Enter") {
 
                 compareStocks();
+
             }
+
         }
     );
 
+}
 
 
 /* =====================================================
@@ -478,11 +827,11 @@ document
 
                 this.value =
                     this.value.toUpperCase();
+
             }
         );
 
     });
-
 
 
 /* =====================================================
@@ -501,37 +850,52 @@ const savedTheme =
     );
 
 
-if (savedTheme === "dark") {
+if (
+    savedTheme === "dark" &&
+    themeToggle
+) {
 
-    document.body.classList.add("dark");
+    document.body.classList.add(
+        "dark"
+    );
 
-    themeToggle.textContent = "☀️";
+    themeToggle.textContent =
+        "☀️";
+
 }
 
 
-themeToggle.addEventListener(
-    "click",
-    function() {
+if (themeToggle) {
 
-        document.body.classList.toggle(
-            "dark"
-        );
+    themeToggle.addEventListener(
+        "click",
+        function() {
 
-
-        const isDark =
-            document.body.classList.contains(
+            document.body.classList.toggle(
                 "dark"
             );
 
 
-        localStorage.setItem(
-            "isc-theme",
-            isDark ? "dark" : "light"
-        );
+            const isDark =
+                document.body.classList.contains(
+                    "dark"
+                );
 
 
-        themeToggle.textContent =
-            isDark ? "☀️" : "🌙";
+            localStorage.setItem(
+                "isc-theme",
+                isDark
+                    ? "dark"
+                    : "light"
+            );
 
-    }
-);
+
+            themeToggle.textContent =
+                isDark
+                    ? "☀️"
+                    : "🌙";
+
+        }
+    );
+
+}
