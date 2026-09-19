@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,1381 +11,1113 @@
 
 <body>
 
-    <!-- =====================================================
-         HEADER
-    ====================================================== -->
+<header class="navbar">
+    <div class="container nav-container">
 
-    <header class="header">
+        <a href="#" class="brand">
+            <div class="brand-icon">📊</div>
 
-        <div class="header-container">
-
-            <div class="brand">
-
-                <div class="brand-icon">
-                    🇮🇩
+            <div>
+                <div class="brand-name">
+                    Indonesia Stock
+                    <span>Comparison</span>
                 </div>
 
-                <div>
-                    <h1>Indonesia Stock Comparison</h1>
-
-                    <p>
-                        Bandingkan saham Indonesia secara lengkap dan akurat
-                    </p>
+                <div class="brand-subtitle">
+                    Indonesian Equity Analysis
                 </div>
-
             </div>
+        </a>
 
-
-            <button
-                id="themeToggle"
+        <button id="themeToggle"
                 class="theme-toggle"
-                aria-label="Ganti tema"
-            >
-                🌙
-            </button>
+                aria-label="Ganti tema">
+            🌙
+        </button>
+
+    </div>
+</header>
+
+
+<!-- HERO -->
+<section class="hero">
+
+    <div class="container hero-container">
+
+        <div class="hero-badge">
+            🇮🇩 Indonesian Stock Market
+        </div>
+
+        <h1>
+            Compare.
+            <span>Analyze.</span>
+            Decide.
+        </h1>
+
+        <p>
+            Bandingkan saham Indonesia dengan cepat,
+            sederhana, dan transparan.
+        </p>
+
+    </div>
+
+</section>
+
+
+<main class="container">
+
+
+<!-- COMPARE PANEL -->
+<section class="compare-panel">
+
+    <div class="eyebrow">
+        STOCK COMPARISON
+    </div>
+
+    <div class="section-heading">
+        <h2>Pilih dua emiten</h2>
+
+        <p>
+            Masukkan kode saham IDX yang ingin kamu bandingkan.
+        </p>
+    </div>
+
+
+    <div class="stock-input-area">
+
+        <div class="input-group">
+
+            <label for="stock1">
+                Saham pertama
+            </label>
+
+            <div class="input-wrapper">
+                <span>IDX</span>
+
+                <input
+                    id="stock1"
+                    type="text"
+                    placeholder="Contoh: PGAS"
+                    maxlength="12"
+                    autocomplete="off"
+                >
+            </div>
 
         </div>
 
-    </header>
+
+        <div class="vs-input">
+            VS
+        </div>
 
 
-    <!-- =====================================================
-         MAIN
-    ====================================================== -->
+        <div class="input-group">
 
-    <main class="container">
+            <label for="stock2">
+                Saham kedua
+            </label>
+
+            <div class="input-wrapper">
+                <span>IDX</span>
+
+                <input
+                    id="stock2"
+                    type="text"
+                    placeholder="Contoh: TAPG"
+                    maxlength="12"
+                    autocomplete="off"
+                >
+            </div>
+
+        </div>
+
+    </div>
 
 
-        <!-- =================================================
-             SEARCH / INPUT
-        ================================================== -->
+    <button
+        id="compareButton"
+        class="compare-button"
+        onclick="compareStocks()"
+    >
 
-        <section class="search-section">
+        <span id="buttonText">
+            Bandingkan Saham
+        </span>
 
-            <div class="section-heading">
+        <span class="button-arrow">
+            →
+        </span>
 
-                <span class="section-number">
-                    01
+    </button>
+
+
+    <div id="status" class="status"></div>
+
+</section>
+
+
+
+<!-- RESULT -->
+<section id="result" class="result hidden">
+
+
+    <!-- STOCK CARD 1 -->
+    <div class="stock-card">
+
+        <div class="stock-card-top">
+
+            <div class="stock-logo" id="logo1">
+                ?
+            </div>
+
+            <div>
+                <div class="stock-label">
+                    EMITEN 01
+                </div>
+
+                <h3 id="name1">
+                    -
+                </h3>
+
+                <div class="ticker" id="ticker1">
+                    -
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="price-section">
+
+            <div class="price-label">
+                Harga terakhir
+            </div>
+
+            <div class="price" id="price1">
+                -
+            </div>
+
+        </div>
+
+
+        <div class="metrics">
+
+            <div class="metric-box">
+
+                <span>
+                    Dividend Yield
                 </span>
 
-                <div>
-                    <h2>Pilih Saham</h2>
-
-                    <p>
-                        Bandingkan dan pilihlah 2 saham yang igin kamu bandingkan
-                    </p>
-                </div>
+                <strong id="dividend1">
+                    -
+                </strong>
 
             </div>
 
 
-            <div class="stock-input-grid">
+            <div class="metric-box">
+
+                <span>
+                    PER
+                </span>
+
+                <strong id="per1">
+                    -
+                </strong>
+
+            </div>
 
 
-                <!-- STOCK 1 -->
+            <div class="metric-box">
 
-                <div class="input-card">
+                <span>
+                    PBV
+                </span>
 
-                    <label for="stock1">
-                    </label>
+                <strong id="pbv1">
+                    -
+                </strong>
 
-                    <div class="input-wrapper">
+            </div>
 
-                        <span class="input-prefix">
-                            IDX
-                        </span>
+        </div>
 
-                        <input
-                            type="text"
-                            id="stock1"
-                            maxlength="10"
-                            autocomplete="off"
-                        >
+    </div>
 
-                    </div>
 
+
+    <!-- VS -->
+    <div class="vs-badge">
+        VS
+    </div>
+
+
+
+    <!-- STOCK CARD 2 -->
+    <div class="stock-card">
+
+        <div class="stock-card-top">
+
+            <div class="stock-logo" id="logo2">
+                ?
+            </div>
+
+            <div>
+
+                <div class="stock-label">
+                    EMITEN 02
                 </div>
 
+                <h3 id="name2">
+                    -
+                </h3>
 
-                <!-- VS -->
+                <div class="ticker" id="ticker2">
+                    -
+                </div>
 
-                <div class="vs-container">
+            </div>
 
-                    <span>
-                        VS
+        </div>
+
+
+        <div class="price-section">
+
+            <div class="price-label">
+                Harga terakhir
+            </div>
+
+            <div class="price" id="price2">
+                -
+            </div>
+
+        </div>
+
+
+        <div class="metrics">
+
+            <div class="metric-box">
+
+                <span>
+                    Dividend Yield
+                </span>
+
+                <strong id="dividend2">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="metric-box">
+
+                <span>
+                    PER
+                </span>
+
+                <strong id="per2">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="metric-box">
+
+                <span>
+                    PBV
+                </span>
+
+                <strong id="pbv2">
+                    -
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- MARKET DATA -->
+<section id="marketSection" class="data-section hidden">
+
+    <div class="eyebrow">
+        MARKET DATA
+    </div>
+
+    <div class="section-heading">
+        <h2>Data perdagangan</h2>
+
+        <p>
+            Ringkasan aktivitas perdagangan terbaru dari IDX.
+        </p>
+    </div>
+
+
+    <div class="data-grid">
+
+
+        <div class="data-card">
+
+            <div class="data-card-header">
+                <div>
+                    <span class="data-card-label">EMITEN 01</span>
+                    <h3 id="marketTitle1">-</h3>
+                </div>
+            </div>
+
+
+            <div class="data-card-grid">
+
+                <div class="data-item">
+                    <span>Open</span>
+                    <strong id="open1">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>High</span>
+                    <strong id="high1">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Low</span>
+                    <strong id="low1">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Volume</span>
+                    <strong id="volume1">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Value</span>
+                    <strong id="value1">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Frequency</span>
+                    <strong id="frequency1">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Bid</span>
+                    <strong id="bid1">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Offer</span>
+                    <strong id="offer1">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Foreign Buy</span>
+                    <strong id="foreignBuy1">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Foreign Sell</span>
+                    <strong id="foreignSell1">-</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="data-card">
+
+            <div class="data-card-header">
+                <div>
+                    <span class="data-card-label">EMITEN 02</span>
+                    <h3 id="marketTitle2">-</h3>
+                </div>
+            </div>
+
+
+            <div class="data-card-grid">
+
+                <div class="data-item">
+                    <span>Open</span>
+                    <strong id="open2">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>High</span>
+                    <strong id="high2">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Low</span>
+                    <strong id="low2">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Volume</span>
+                    <strong id="volume2">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Value</span>
+                    <strong id="value2">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Frequency</span>
+                    <strong id="frequency2">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Bid</span>
+                    <strong id="bid2">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Offer</span>
+                    <strong id="offer2">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Foreign Buy</span>
+                    <strong id="foreignBuy2">-</strong>
+                </div>
+
+                <div class="data-item">
+                    <span>Foreign Sell</span>
+                    <strong id="foreignSell2">-</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- PRICE CHART -->
+<section id="chartSection" class="data-section chart-section hidden">
+
+    <div class="eyebrow">
+        PRICE HISTORY
+    </div>
+
+    <div class="section-heading">
+
+        <h2>Pergerakan harga</h2>
+
+        <p id="chartSubtitle">
+            Riwayat harga saham.
+        </p>
+
+    </div>
+
+
+    <div class="chart-card">
+
+        <div class="chart-legend">
+
+            <div>
+                <span
+                    id="chartLegend1Dot"
+                    class="legend-dot legend-dot-one">
+                </span>
+
+                <strong id="chartLegend1">
+                    -
+                </strong>
+            </div>
+
+
+            <div>
+                <span
+                    id="chartLegend2Dot"
+                    class="legend-dot legend-dot-two">
+                </span>
+
+                <strong id="chartLegend2">
+                    -
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="chart-container">
+
+            <canvas id="priceChart"></canvas>
+
+            <div
+                id="chartLoading"
+                class="chart-loading hidden"
+            >
+                Memuat grafik...
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- DIVIDENDS -->
+<section id="dividendSection" class="data-section hidden">
+
+    <div class="eyebrow">
+        DIVIDEND
+    </div>
+
+    <div class="section-heading">
+
+        <h2>Riwayat dividen</h2>
+
+        <p>
+            Data corporate action yang tersedia dari IDX.
+        </p>
+
+    </div>
+
+
+    <div class="data-grid">
+
+        <div class="data-card document-card">
+
+            <div class="data-card-header">
+                <div>
+                    <span class="data-card-label">
+                        EMITEN 01
                     </span>
 
+                    <h3 id="dividendTitle1">
+                        -
+                    </h3>
+                </div>
+            </div>
+
+            <div
+                id="dividendList1"
+                class="document-list"
+            ></div>
+
+        </div>
+
+
+
+        <div class="data-card document-card">
+
+            <div class="data-card-header">
+                <div>
+                    <span class="data-card-label">
+                        EMITEN 02
+                    </span>
+
+                    <h3 id="dividendTitle2">
+                        -
+                    </h3>
+                </div>
+            </div>
+
+            <div
+                id="dividendList2"
+                class="document-list"
+            ></div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- COMPANY PROFILE -->
+<section id="profileSection" class="data-section hidden">
+
+    <div class="eyebrow">
+        COMPANY PROFILE
+    </div>
+
+    <div class="section-heading">
+
+        <h2>Mengenal perusahaan</h2>
+
+        <p>
+            Informasi dasar perusahaan dari data IDX.
+        </p>
+
+    </div>
+
+
+    <div class="data-grid">
+
+        <div class="profile-card">
+
+            <div class="profile-header">
+
+                <div
+                    id="profileLogo1"
+                    class="profile-logo"
+                >
+                    ?
                 </div>
 
+                <div>
+                    <h3 id="profileName1">
+                        -
+                    </h3>
 
-                <!-- STOCK 2 -->
-
-                <div class="input-card">
-
-                    <label for="stock2">
-                    </label>
-
-                    <div class="input-wrapper">
-
-                        <span class="input-prefix">
-                            IDX
-                        </span>
-
-                        <input
-                            type="text"
-                            id="stock2"
-                            maxlength="10"
-                            autocomplete="off"
-                        >
-
-                    </div>
-
+                    <span id="profileTicker1">
+                        -
+                    </span>
                 </div>
 
             </div>
 
 
-            <button
-                id="compareButton"
-                class="compare-button"
-                onclick="compareStocks()"
-            >
+            <div class="profile-grid">
 
-                <span id="buttonText">
-                    Bandingkan Saham
+                <div class="profile-item">
+                    <span>Sector</span>
+                    <strong id="sector1">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Industry</span>
+                    <strong id="industry1">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Employees</span>
+                    <strong id="employees1">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Listing Date</span>
+                    <strong id="listingDate1">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Listing Board</span>
+                    <strong id="listingBoard1">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Website</span>
+                    <span id="website1">-</span>
+                </div>
+
+            </div>
+
+
+            <div class="business-description">
+
+                <span>
+                    Kegiatan utama
                 </span>
 
-            </button>
+                <p id="description1">
+                    -
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="profile-card">
+
+            <div class="profile-header">
+
+                <div
+                    id="profileLogo2"
+                    class="profile-logo"
+                >
+                    ?
+                </div>
+
+                <div>
+                    <h3 id="profileName2">
+                        -
+                    </h3>
+
+                    <span id="profileTicker2">
+                        -
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="profile-grid">
+
+                <div class="profile-item">
+                    <span>Sector</span>
+                    <strong id="sector2">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Industry</span>
+                    <strong id="industry2">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Employees</span>
+                    <strong id="employees2">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Listing Date</span>
+                    <strong id="listingDate2">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Listing Board</span>
+                    <strong id="listingBoard2">-</strong>
+                </div>
+
+                <div class="profile-item">
+                    <span>Website</span>
+                    <span id="website2">-</span>
+                </div>
+
+            </div>
+
+
+            <div class="business-description">
+
+                <span>
+                    Kegiatan utama
+                </span>
+
+                <p id="description2">
+                    -
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- FINANCIAL REPORTS -->
+<section id="financialSection" class="data-section hidden">
+
+    <div class="eyebrow">
+        FINANCIAL REPORT
+    </div>
+
+    <div class="section-heading">
+
+        <h2>Laporan keuangan</h2>
+
+        <p>
+            Dokumen laporan keuangan yang tersedia.
+        </p>
+
+    </div>
+
+
+    <div class="data-grid">
+
+        <div class="data-card document-card">
+
+            <div class="data-card-header">
+                <div>
+                    <span class="data-card-label">
+                        EMITEN 01
+                    </span>
+
+                    <h3 id="reportTitle1">
+                        -
+                    </h3>
+                </div>
+            </div>
+
+            <div
+                id="financialList1"
+                class="document-list"
+            ></div>
+
+        </div>
+
+
+
+        <div class="data-card document-card">
+
+            <div class="data-card-header">
+                <div>
+                    <span class="data-card-label">
+                        EMITEN 02
+                    </span>
+
+                    <h3 id="reportTitle2">
+                        -
+                    </h3>
+                </div>
+            </div>
+
+            <div
+                id="financialList2"
+                class="document-list"
+            ></div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- OWNERSHIP -->
+<section id="ownershipSection" class="data-section hidden">
+
+    <div class="eyebrow">
+        OWNERSHIP
+    </div>
+
+    <div class="section-heading">
+
+        <h2>Dokumen kepemilikan</h2>
+
+        <p>
+            Dokumen kepemilikan saham yang tersedia dari IDX/KSEI.
+        </p>
+
+    </div>
+
+
+    <div class="data-grid">
+
+        <div class="data-card document-card">
+
+            <div class="data-card-header">
+
+                <div>
+
+                    <span class="data-card-label">
+                        EMITEN 01
+                    </span>
+
+                    <h3 id="ownershipTitle1">
+                        -
+                    </h3>
+
+                </div>
+
+            </div>
 
 
             <div
-                id="status"
-                class="status"
+                id="ownershipList1"
+                class="document-list"
             ></div>
 
-        </section>
+        </div>
 
 
 
-        <!-- =================================================
-             RESULT
-        ================================================== -->
+        <div class="data-card document-card">
 
-        <section
-            id="result"
-            class="result hidden"
-        >
+            <div class="data-card-header">
 
+                <div>
 
-            <!-- =================================================
-                 STOCK HEADER
-            ================================================== -->
+                    <span class="data-card-label">
+                        EMITEN 02
+                    </span>
 
-            <div class="stock-header-grid">
-
-
-                <!-- STOCK 1 -->
-
-                <div class="stock-card">
-
-                    <div class="stock-logo" id="logo1">
-                        --
-                    </div>
-
-                    <div class="stock-info">
-
-                        <h2 id="name1">
-                            -
-                        </h2>
-
-                        <span
-                            id="ticker1"
-                            class="ticker"
-                        >
-                            ---
-                        </span>
-
-                    </div>
-
-                    <div class="stock-price">
-
-                        <span>
-                            Harga
-                        </span>
-
-                        <strong id="price1">
-                            -
-                        </strong>
-
-                        <small id="change1">
-                            -
-                        </small>
-
-                    </div>
-
-                </div>
-
-
-                <!-- STOCK 2 -->
-
-                <div class="stock-card">
-
-                    <div class="stock-logo" id="logo2">
-                        --
-                    </div>
-
-                    <div class="stock-info">
-
-                        <h2 id="name2">
-                            -
-                        </h2>
-
-                        <span
-                            id="ticker2"
-                            class="ticker"
-                        >
-                            ---
-                        </span>
-
-                    </div>
-
-                    <div class="stock-price">
-
-                        <span>
-                            Harga
-                        </span>
-
-                        <strong id="price2">
-                            -
-                        </strong>
-
-                        <small id="change2">
-                            -
-                        </small>
-
-                    </div>
+                    <h3 id="ownershipTitle2">
+                        -
+                    </h3>
 
                 </div>
 
             </div>
 
 
-
-            <!-- =================================================
-                 MARKET DATA
-            ================================================== -->
-
-            <section class="data-section">
-
-                <div class="section-heading">
-
-                    <span class="section-number">
-                        02
-                    </span>
-
-                    <div>
-                        <h2>Market Data</h2>
-
-                        <p>
-                            Data perdagangan terbaru.
-                        </p>
-                    </div>
-
-                </div>
-
-
-                <div class="market-grid">
-
-
-                    <!-- STOCK 1 MARKET -->
-
-                    <div class="data-card">
-
-                        <h3 id="marketTitle1">
-                            Market Data
-                        </h3>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Open
-                            </span>
-
-                            <strong id="open1">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                High
-                            </span>
-
-                            <strong id="high1">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Low
-                            </span>
-
-                            <strong id="low1">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Volume
-                            </span>
-
-                            <strong id="volume1">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Value
-                            </span>
-
-                            <strong id="value1">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Frequency
-                            </span>
-
-                            <strong id="frequency1">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Bid
-                            </span>
-
-                            <strong id="bid1">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Offer
-                            </span>
-
-                            <strong id="offer1">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Foreign Buy
-                            </span>
-
-                            <strong id="foreignBuy1">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Foreign Sell
-                            </span>
-
-                            <strong id="foreignSell1">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-
-                    <!-- STOCK 2 MARKET -->
-
-                    <div class="data-card">
-
-                        <h3 id="marketTitle2">
-                            Market Data
-                        </h3>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Open
-                            </span>
-
-                            <strong id="open2">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                High
-                            </span>
-
-                            <strong id="high2">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Low
-                            </span>
-
-                            <strong id="low2">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Volume
-                            </span>
-
-                            <strong id="volume2">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Value
-                            </span>
-
-                            <strong id="value2">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Frequency
-                            </span>
-
-                            <strong id="frequency2">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Bid
-                            </span>
-
-                            <strong id="bid2">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Offer
-                            </span>
-
-                            <strong id="offer2">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Foreign Buy
-                            </span>
-
-                            <strong id="foreignBuy2">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-
-                        <div class="metric-row">
-
-                            <span>
-                                Foreign Sell
-                            </span>
-
-                            <strong id="foreignSell2">
-                                Data tidak tersedia
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-
-            <!-- =================================================
-                 PRICE CHART
-            ================================================== -->
-
-            <section class="data-section chart-section">
-
-                <div class="section-heading">
-
-                    <span class="section-number">
-                        03
-                    </span>
-
-                    <div>
-
-                        <h2>Price Chart</h2>
-
-                        <p>
-                            Pergerakan harga historis kedua saham.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="chart-card">
-
-                    <div class="chart-header">
-
-                        <div>
-
-                            <h3>
-                                Historical Price
-                            </h3>
-
-                            <p id="chartSubtitle">
-                                Perbandingan harga saham
-                            </p>
-
-                        </div>
-
-
-                        <div class="chart-legend">
-
-                            <span id="chartLegend1">
-                                ● Saham 1
-                            </span>
-
-                            <span id="chartLegend2">
-                                ● Saham 2
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="chart-container">
-
-                        <canvas
-                            id="priceChart"
-                        ></canvas>
-
-                        <div
-                            id="chartLoading"
-                            class="chart-loading"
-                        >
-                            Memuat chart...
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-
-            <!-- =================================================
-                 DIVIDEND
-            ================================================== -->
-
-            <section class="data-section">
-
-                <div class="section-heading">
-
-                    <span class="section-number">
-                        04
-                    </span>
-
-                    <div>
-
-                        <h2>Dividend</h2>
-
-                        <p>
-                            Riwayat pembagian dividen perusahaan.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="dividend-grid">
-
-
-                    <!-- DIVIDEND 1 -->
-
-                    <div class="data-card">
-
-                        <div class="card-title-row">
-
-                            <h3 id="dividendTitle1">
-                                Dividend
-                            </h3>
-
-                            <span class="card-badge">
-                                DPS
-                            </span>
-
-                        </div>
-
-
-                        <div
-                            id="dividendList1"
-                            class="dividend-list"
-                        >
-
-                            <div class="empty-data">
-                                Memuat data dividen...
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- DIVIDEND 2 -->
-
-                    <div class="data-card">
-
-                        <div class="card-title-row">
-
-                            <h3 id="dividendTitle2">
-                                Dividend
-                            </h3>
-
-                            <span class="card-badge">
-                                DPS
-                            </span>
-
-                        </div>
-
-
-                        <div
-                            id="dividendList2"
-                            class="dividend-list"
-                        >
-
-                            <div class="empty-data">
-                                Memuat data dividen...
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-
-            <!-- =================================================
-                 FINANCIAL REPORT
-            ================================================== -->
-
-            <section class="data-section">
-
-                <div class="section-heading">
-
-                    <span class="section-number">
-                        05
-                    </span>
-
-                    <div>
-
-                        <h2>Financial Report</h2>
-
-                        <p>
-                            Dokumen laporan keuangan yang tersedia.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="report-grid">
-
-
-                    <!-- REPORT 1 -->
-
-                    <div class="data-card">
-
-                        <h3 id="reportTitle1">
-                            Financial Report
-                        </h3>
-
-
-                        <div
-                            id="financialList1"
-                            class="document-list"
-                        >
-
-                            <div class="empty-data">
-                                Memuat laporan keuangan...
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- REPORT 2 -->
-
-                    <div class="data-card">
-
-                        <h3 id="reportTitle2">
-                            Financial Report
-                        </h3>
-
-
-                        <div
-                            id="financialList2"
-                            class="document-list"
-                        >
-
-                            <div class="empty-data">
-                                Memuat laporan keuangan...
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-
-            <!-- =================================================
-                 COMPANY PROFILE
-            ================================================== -->
-
-            <section class="data-section">
-
-                <div class="section-heading">
-
-                    <span class="section-number">
-                        06
-                    </span>
-
-                    <div>
-
-                        <h2>Company Profile</h2>
-
-                        <p>
-                            Informasi dasar dan profil bisnis perusahaan.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="profile-grid">
-
-
-                    <!-- PROFILE 1 -->
-
-                    <div class="profile-card">
-
-                        <div class="profile-header">
-
-                            <div
-                                id="profileLogo1"
-                                class="profile-logo"
-                            >
-                                --
-                            </div>
-
-                            <div>
-
-                                <h3 id="profileName1">
-                                    -
-                                </h3>
-
-                                <span id="profileTicker1">
-                                    ---
-                                </span>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="profile-info">
-
-
-                            <div class="profile-item">
-
-                                <span>
-                                    Sector
-                                </span>
-
-                                <strong id="sector1">
-                                    Data tidak tersedia
-                                </strong>
-
-                            </div>
-
-
-                            <div class="profile-item">
-
-                                <span>
-                                    Industry
-                                </span>
-
-                                <strong id="industry1">
-                                    Data tidak tersedia
-                                </strong>
-
-                            </div>
-
-
-                            <div class="profile-item">
-
-                                <span>
-                                    Employees
-                                </span>
-
-                                <strong id="employees1">
-                                    Data tidak tersedia
-                                </strong>
-
-                            </div>
-
-
-                            <div class="profile-item">
-
-                                <span>
-                                    Website
-                                </span>
-
-                                <a
-                                    id="website1"
-                                    href="#"
-                                    target="_blank"
-                                    rel="noopener"
-                                >
-                                    Data tidak tersedia
-                                </a>
-
-                            </div>
-
-
-                        </div>
-
-
-                        <div class="description-box">
-
-                            <h4>
-                                Tentang Perusahaan
-                            </h4>
-
-                            <p id="description1">
-                                Data tidak tersedia.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-
-                    <!-- PROFILE 2 -->
-
-                    <div class="profile-card">
-
-                        <div class="profile-header">
-
-                            <div
-                                id="profileLogo2"
-                                class="profile-logo"
-                            >
-                                --
-                            </div>
-
-                            <div>
-
-                                <h3 id="profileName2">
-                                    -
-                                </h3>
-
-                                <span id="profileTicker2">
-                                    ---
-                                </span>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="profile-info">
-
-
-                            <div class="profile-item">
-
-                                <span>
-                                    Sector
-                                </span>
-
-                                <strong id="sector2">
-                                    Data tidak tersedia
-                                </strong>
-
-                            </div>
-
-
-                            <div class="profile-item">
-
-                                <span>
-                                    Industry
-                                </span>
-
-                                <strong id="industry2">
-                                    Data tidak tersedia
-                                </strong>
-
-                            </div>
-
-
-                            <div class="profile-item">
-
-                                <span>
-                                    Employees
-                                </span>
-
-                                <strong id="employees2">
-                                    Data tidak tersedia
-                                </strong>
-
-                            </div>
-
-
-                            <div class="profile-item">
-
-                                <span>
-                                    Website
-                                </span>
-
-                                <a
-                                    id="website2"
-                                    href="#"
-                                    target="_blank"
-                                    rel="noopener"
-                                >
-                                    Data tidak tersedia
-                                </a>
-
-                            </div>
-
-
-                        </div>
-
-
-                        <div class="description-box">
-
-                            <h4>
-                                Tentang Perusahaan
-                            </h4>
-
-                            <p id="description2">
-                                Data tidak tersedia.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-
-            <!-- =================================================
-                 OWNERSHIP
-            ================================================== -->
-
-            <section class="data-section">
-
-                <div class="section-heading">
-
-                    <span class="section-number">
-                        07
-                    </span>
-
-                    <div>
-
-                        <h2>Ownership Profile</h2>
-
-                        <p>
-                            Dokumen dan informasi kepemilikan yang tersedia.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="ownership-grid">
-
-
-                    <!-- OWNERSHIP 1 -->
-
-                    <div class="data-card">
-
-                        <h3 id="ownershipTitle1">
-                            Ownership
-                        </h3>
-
-
-                        <div
-                            id="ownershipList1"
-                            class="document-list"
-                        >
-
-                            <div class="empty-data">
-                                Memuat data ownership...
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- OWNERSHIP 2 -->
-
-                    <div class="data-card">
-
-                        <h3 id="ownershipTitle2">
-                            Ownership
-                        </h3>
-
-
-                        <div
-                            id="ownershipList2"
-                            class="document-list"
-                        >
-
-                            <div class="empty-data">
-                                Memuat data ownership...
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-
-            <!-- =================================================
-                 COMPARISON TABLE
-            ================================================== -->
-
-            <section
-                id="comparison"
-                class="data-section"
-            >
-
-                <div class="section-heading">
-
-                    <span class="section-number">
-                        08
-                    </span>
-
-                    <div>
-
-                        <h2>Quick Comparison</h2>
-
-                        <p>
-                            Ringkasan perbandingan kedua saham.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="comparison-wrapper">
-
-                    <table class="comparison-table">
-
-                        <thead>
-
-                            <tr>
-
-                                <th>
-                                    Metric
-                                </th>
-
-                                <th id="tableTicker1">
-                                    Saham 1
-                                </th>
-
-                                <th id="tableTicker2">
-                                    Saham 2
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-
-                        <tbody>
-
-
-                            <tr>
-
-                                <td>
-                                    Harga
-                                </td>
-
-                                <td id="tablePrice1">
-                                    -
-                                </td>
-
-                                <td id="tablePrice2">
-                                    -
-                                </td>
-
-                            </tr>
-
-
-                            <tr>
-
-                                <td>
-                                    Dividend
-                                </td>
-
-                                <td id="tableDividend1">
-                                    -
-                                </td>
-
-                                <td id="tableDividend2">
-                                    -
-                                </td>
-
-                            </tr>
-
-
-                            <tr>
-
-                                <td>
-                                    PER
-                                </td>
-
-                                <td id="tablePer1">
-                                    Belum tersedia
-                                </td>
-
-                                <td id="tablePer2">
-                                    Belum tersedia
-                                </td>
-
-                            </tr>
-
-
-                            <tr>
-
-                                <td>
-                                    PBV
-                                </td>
-
-                                <td id="tablePbv1">
-                                    Belum tersedia
-                                </td>
-
-                                <td id="tablePbv2">
-                                    Belum tersedia
-                                </td>
-
-                            </tr>
-
-
-                            <tr>
-
-                                <td>
-                                    Volume
-                                </td>
-
-                                <td id="tableVolume1">
-                                    -
-                                </td>
-
-                                <td id="tableVolume2">
-                                    -
-                                </td>
-
-                            </tr>
-
-
-                            <tr>
-
-                                <td>
-                                    Foreign Buy
-                                </td>
-
-                                <td id="tableForeignBuy1">
-                                    -
-                                </td>
-
-                                <td id="tableForeignBuy2">
-                                    -
-                                </td>
-
-                            </tr>
-
-
-                            <tr>
-
-                                <td>
-                                    Foreign Sell
-                                </td>
-
-                                <td id="tableForeignSell1">
-                                    -
-                                </td>
-
-                                <td id="tableForeignSell2">
-                                    -
-                                </td>
-
-                            </tr>
-
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </section>
-
-
-        </section>
-
-
-    </main>
-
-
-
-    <!-- =====================================================
-         FOOTER
-    ====================================================== -->
-
-    <footer class="footer">
-
-        <div class="footer-container">
-
-            <strong>
-                Indonesia Stock Comparison
-            </strong>
-
-            <p>
-                Data saham Indonesia untuk kebutuhan informasi dan perbandingan.
-            </p>
-
-            <small>
-                Data bersumber dari API pihak ketiga. Selalu lakukan riset
-                sendiri sebelum mengambil keputusan investasi.
-            </small>
+            <div
+                id="ownershipList2"
+                class="document-list"
+            ></div>
 
         </div>
 
-    </footer>
+    </div>
+
+</section>
 
 
 
-    <!-- =====================================================
-         JAVASCRIPT
-    ====================================================== -->
+<!-- COMPARISON -->
+<section
+    class="comparison hidden"
+    id="comparison"
+>
 
-    <script src="script.js"></script>
+    <div class="eyebrow">
+        SIDE-BY-SIDE
+    </div>
+
+    <div class="section-heading">
+
+        <h2>Perbandingan langsung</h2>
+
+        <p>
+            Lihat metrik utama kedua emiten dalam satu tabel.
+        </p>
+
+    </div>
+
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Metric
+                    </th>
+
+                    <th id="tableTicker1">
+                        -
+                    </th>
+
+                    <th id="tableTicker2">
+                        -
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                <tr>
+                    <td>Harga</td>
+                    <td id="tablePrice1">-</td>
+                    <td id="tablePrice2">-</td>
+                </tr>
+
+                <tr>
+                    <td>Dividend Yield</td>
+                    <td id="tableDividend1">-</td>
+                    <td id="tableDividend2">-</td>
+                </tr>
+
+                <tr>
+                    <td>PER</td>
+                    <td id="tablePer1">-</td>
+                    <td id="tablePer2">-</td>
+                </tr>
+
+                <tr>
+                    <td>PBV</td>
+                    <td id="tablePbv1">-</td>
+                    <td id="tablePbv2">-</td>
+                </tr>
+
+                <tr>
+                    <td>Volume</td>
+                    <td id="tableVolume1">-</td>
+                    <td id="tableVolume2">-</td>
+                </tr>
+
+                <tr>
+                    <td>Foreign Buy</td>
+                    <td id="tableForeignBuy1">-</td>
+                    <td id="tableForeignBuy2">-</td>
+                </tr>
+
+                <tr>
+                    <td>Foreign Sell</td>
+                    <td id="tableForeignSell1">-</td>
+                    <td id="tableForeignSell2">-</td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+
+
+<!-- INFO -->
+<section class="info-section">
+
+    <div class="info-icon">
+        💡
+    </div>
+
+    <div>
+
+        <h3>
+            Tentang Indonesia Stock Comparison
+        </h3>
+
+        <p>
+            Platform ini membantu membandingkan emiten
+            Indonesia menggunakan data pasar dan informasi
+            perusahaan yang tersedia melalui sumber data IDX.
+        </p>
+
+        <p>
+            Data digunakan sebagai informasi pendukung,
+            bukan sebagai rekomendasi investasi.
+        </p>
+
+    </div>
+
+</section>
+
+
+</main>
+
+
+
+<!-- FOOTER -->
+<footer>
+
+    <div class="container">
+
+        <div class="footer-brand">
+            📊 Indonesia Stock Comparison
+        </div>
+
+        <p>
+            Indonesian Equity Analysis Platform
+        </p>
+
+        <small>
+            Data sourced from available IDX datasets.
+        </small>
+
+    </div>
+
+</footer>
+
+
+<script src="script.js"></script>
 
 </body>
-
 </html>
