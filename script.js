@@ -1,5 +1,16 @@
+/* =========================================================
+   INDONESIA STOCK COMPARISON
+   ZAPI + CLOUDFLARE WORKER
+========================================================= */
+
+
+/* =========================
+   CONFIG
+========================= */
+
 const API_URL =
     "https://indonesia-stock-comparison.sayyid-syafiq136.workers.dev";
+
 
 const TYPES = [
     "summary",
@@ -10,458 +21,635 @@ const TYPES = [
     "ownership"
 ];
 
-let stockResults = [null, null];
+
 
 /* =========================
-   ELEMENT HELPERS
+   HELPERS
 ========================= */
 
 function $(id) {
     return document.getElementById(id);
 }
 
-function setText(id, value) {
-    const el = $(id);
-    if (!el) return;
+
+function cleanSymbol(value) {
+
+    return String(value || "")
+        .trim()
+        .toUpperCase()
+        .replace(".JK", "");
+
+}
+
+
+function formatNumber(value) {
 
     if (
         value === null ||
         value === undefined ||
-        value === ""
+        value === "" ||
+        Number.isNaN(Number(value))
     ) {
-        el.textContent = "Belum tersedia";
-    } else {
-        el.textContent = value;
-    }
-}
-
-function setHTML(id, html) {
-    const el = $(id);
-    if (el) el.innerHTML = html;
-}
-
-/* =========================
-   FORMATTERS
-========================= */
-
-function numberValue(value) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : null;
-}
-
-function formatNumber(value) {
-    const n = numberValue(value);
-
-    if (n === null) {
         return "Belum tersedia";
     }
 
-    return n.toLocaleString("id-ID");
+    return new Intl.NumberFormat("id-ID").format(
+        Number(value)
+    );
+
 }
+
 
 function formatPrice(value) {
-    const n = numberValue(value);
 
-    if (n === null) {
+    if (
+        value === null ||
+        value === undefined ||
+        value === "" ||
+        Number.isNaN(Number(value))
+    ) {
         return "Belum tersedia";
     }
 
-    return `Rp ${n.toLocaleString("id-ID")}`;
+    return "Rp " + formatNumber(value);
+
 }
 
-function formatPercent(value) {
-    const n = numberValue(value);
-
-    if (n === null) {
-        return "Belum tersedia";
-    }
-
-    const sign = n > 0 ? "+" : "";
-
-    return `${sign}${n.toFixed(2)}%`;
-}
 
 function formatDate(value) {
+
     if (!value) {
         return "Belum tersedia";
     }
 
-    const date = new Date(
-        value.includes("T")
-            ? value
-            : `${value}T00:00:00`
-    );
+    const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) {
         return value;
     }
 
-    return date.toLocaleDateString(
+    return new Intl.DateTimeFormat(
         "id-ID",
         {
             day: "2-digit",
             month: "short",
             year: "numeric"
         }
-    );
+    ).format(date);
+
 }
+
 
 function formatFileSize(bytes) {
-    const n = numberValue(bytes);
-
-    if (n === null || n === 0) {
-        return "Ukuran tidak tersedia";
-    }
-
-    if (n < 1024) {
-        return `${n} B`;
-    }
-
-    if (n < 1024 * 1024) {
-        return `${(n / 1024).toFixed(1)} KB`;
-    }
-
-    return `${(n / (1024 * 1024)).toFixed(2)} MB`;
-}
-
-function normalizeWebsite(url) {
-    if (!url) return null;
 
     if (
-        url.startsWith("http://") ||
-        url.startsWith("https://")
+        bytes === null ||
+        bytes === undefined ||
+        bytes === 0
     ) {
-        return url;
+        return "";
     }
 
-    return `https://${url}`;
+    const mb = bytes / 1024 / 1024;
+
+    if (mb >= 1) {
+        return `${mb.toFixed(2)} MB`;
+    }
+
+    const kb = bytes / 1024;
+
+    return `${Math.round(kb)} KB`;
+
 }
+
+
+function setText(id, value) {
+
+    const element = $(id);
+
+    if (!element) {
+        return;
+    }
+
+    element.textContent =
+        value === null ||
+        value === undefined ||
+        value === ""
+            ? "Belum tersedia"
+            : value;
+
+}
+
+
+function safeArray(value) {
+
+    return Array.isArray(value)
+        ? value
+        : [];
+
+}
+
+
 
 /* =========================
    API
 ========================= */
 
-async function fetchType(ticker, type) {
+async function fetchType(symbol, type) {
+
     const url =
-        `${API_URL}/?symbol=${encodeURIComponent(ticker)}` +
-        `&type=${encodeURIComponent(type)}`;
+        `${API_URL}/?symbol=${encodeURIComponent(symbol)}&type=${encodeURIComponent(type)}`;
+
 
     const response = await fetch(url);
 
+
     if (!response.ok) {
-        let message = `HTTP ${response.status}`;
 
-        try {
-            const errorData =
-                await response.json();
-
-            if (errorData?.detail) {
-                message = errorData.detail;
-            }
-        } catch (_) {}
-
-        throw new Error(message);
-    }
-
-    return response.json();
-}
-
-
-async function fetchStock(ticker) {
-
-    const results =
-        await Promise.all(
-            TYPES.map(async (type) => {
-
-                try {
-
-                    const data =
-                        await fetchType(
-                            ticker,
-                            type
-                        );
-
-                    return {
-                        type,
-                        ok: true,
-                        data
-                    };
-
-                } catch (error) {
-
-                    console.error(
-                        `${ticker} ${type}:`,
-                        error
-                    );
-
-                    return {
-                        type,
-                        ok: false,
-                        error:
-                            error.message ||
-                            "Gagal mengambil data"
-                    };
-                }
-            })
+        throw new Error(
+            `${type}: HTTP ${response.status}`
         );
 
-    const output = {};
+    }
 
-    results.forEach(result => {
 
-        if (result.ok) {
-            output[result.type] =
-                result.data;
-        } else {
-            output[result.type] = null;
-        }
+    const json = await response.json();
 
-    });
 
-    return output;
+    if (
+        json &&
+        json.error
+    ) {
+
+        throw new Error(
+            `${type}: ${json.error}`
+        );
+
+    }
+
+
+    return json;
+
 }
+
+
+async function loadStock(symbol) {
+
+    const results = {};
+
+    const requests =
+        TYPES.map(async (type) => {
+
+            try {
+
+                results[type] =
+                    await fetchType(symbol, type);
+
+            }
+            catch (error) {
+
+                console.warn(
+                    `${symbol} ${type} gagal:`,
+                    error
+                );
+
+                results[type] = {
+                    __error: true,
+                    message: error.message
+                };
+
+            }
+
+        });
+
+
+    await Promise.all(requests);
+
+
+    return results;
+
+}
+
 
 
 /* =========================
    SUMMARY
 ========================= */
 
-function renderSummary(stock, index) {
+function renderSummary(
+    summary,
+    index,
+    symbol
+) {
 
-    if (!stock) return;
+    const suffix =
+        index + 1;
 
-    const n = index + 1;
 
-    setText(
-        `name${n}`,
-        stock.name
-    );
+    const data =
+        summary &&
+        !summary.__error
+            ? summary
+            : {};
 
-    setText(
-        `ticker${n}`,
-        stock.symbol
-            ? stock.symbol
-            : "Belum tersedia"
-    );
-
-    setText(
-        `price${n}`,
-        formatPrice(stock.price)
-    );
 
     setText(
-        `change${n}`,
-        stock.change !== null &&
-        stock.change !== undefined
-            ? `${stock.change > 0 ? "+" : ""}${formatNumber(stock.change)} (${formatPercent(stock.changePercent)})`
-            : "Belum tersedia"
+        `name${suffix}`,
+        data.name || symbol
     );
 
-    setText(
-        `open${n}`,
-        formatPrice(stock.open)
-    );
 
     setText(
-        `high${n}`,
-        formatPrice(stock.high)
+        `ticker${suffix}`,
+        data.symbol || symbol
     );
 
-    setText(
-        `low${n}`,
-        formatPrice(stock.low)
-    );
 
     setText(
-        `volume${n}`,
-        formatNumber(stock.volume)
+        `price${suffix}`,
+        formatPrice(data.price)
     );
 
-    setText(
-        `value${n}`,
-        formatPrice(stock.value)
-    );
+
+    /*
+        Zapi summary belum memberikan
+        Dividend Yield / PER / PBV.
+        Jadi jangan mengarang angka.
+    */
 
     setText(
-        `frequency${n}`,
-        formatNumber(stock.frequency)
+        `dividend${suffix}`,
+        "Belum tersedia"
     );
 
-    setText(
-        `bid${n}`,
-        formatPrice(stock.bid)
-    );
 
     setText(
-        `offer${n}`,
-        formatPrice(stock.offer)
+        `per${suffix}`,
+        "Belum tersedia"
     );
 
-    setText(
-        `foreignBuy${n}`,
-        formatNumber(stock.foreignBuy)
-    );
 
     setText(
-        `foreignSell${n}`,
-        formatNumber(stock.foreignSell)
+        `pbv${suffix}`,
+        "Belum tersedia"
     );
+
+
+    setText(
+        `tableTicker${suffix}`,
+        data.symbol || symbol
+    );
+
+
+    setText(
+        `tablePrice${suffix}`,
+        formatPrice(data.price)
+    );
+
+
+    setText(
+        `tableDividend${suffix}`,
+        "Belum tersedia"
+    );
+
+
+    setText(
+        `tablePer${suffix}`,
+        "Belum tersedia"
+    );
+
+
+    setText(
+        `tablePbv${suffix}`,
+        "Belum tersedia"
+    );
+
+
+    setText(
+        `marketTitle${suffix}`,
+        data.symbol || symbol
+    );
+
+
+    setText(
+        `open${suffix}`,
+        formatPrice(data.open)
+    );
+
+
+    setText(
+        `high${suffix}`,
+        formatPrice(data.high)
+    );
+
+
+    setText(
+        `low${suffix}`,
+        formatPrice(data.low)
+    );
+
+
+    setText(
+        `volume${suffix}`,
+        formatNumber(data.volume)
+    );
+
+
+    setText(
+        `value${suffix}`,
+        formatPrice(data.value)
+    );
+
+
+    setText(
+        `frequency${suffix}`,
+        formatNumber(data.frequency)
+    );
+
+
+    setText(
+        `bid${suffix}`,
+        formatPrice(data.bid)
+    );
+
+
+    setText(
+        `offer${suffix}`,
+        formatPrice(data.offer)
+    );
+
+
+    setText(
+        `foreignBuy${suffix}`,
+        formatNumber(data.foreignBuy)
+    );
+
+
+    setText(
+        `foreignSell${suffix}`,
+        formatNumber(data.foreignSell)
+    );
+
+
+    setText(
+        `tableVolume${suffix}`,
+        formatNumber(data.volume)
+    );
+
+
+    setText(
+        `tableForeignBuy${suffix}`,
+        formatNumber(data.foreignBuy)
+    );
+
+
+    setText(
+        `tableForeignSell${suffix}`,
+        formatNumber(data.foreignSell)
+    );
+
+
+    /*
+        Logo fallback.
+        Profile akan menggantinya jika tersedia.
+    */
+
+    const logo =
+        $(`logo${suffix}`);
+
+
+    if (logo) {
+
+        logo.textContent =
+            String(
+                data.symbol || symbol
+            ).substring(0, 1);
+
+    }
+
 }
+
 
 
 /* =========================
    PROFILE
 ========================= */
 
-function renderProfile(rawProfile, index) {
+function renderProfile(
+    response,
+    index,
+    symbol
+) {
 
-    if (!rawProfile) return;
+    const suffix =
+        index + 1;
 
-    const n = index + 1;
 
     const profile =
-        rawProfile?.data || {};
+        response &&
+        !response.__error &&
+        response.data
+            ? response.data
+            : null;
 
-    const logo =
-        profile.logo || "";
 
-    const name =
-        profile.name ||
-        "Belum tersedia";
+    if (!profile) {
 
-    const symbol =
-        profile.code ||
-        "";
+        setText(
+            `profileName${suffix}`,
+            symbol
+        );
 
-    const sector =
-        profile.sector;
+        setText(
+            `profileTicker${suffix}`,
+            symbol
+        );
 
-    const industry =
-        profile.industry ||
-        profile.subIndustry;
+        return;
 
-    const website =
-        profile.website;
+    }
 
-    const business =
-        profile.mainBusiness;
 
     setText(
-        `profileName${n}`,
-        name
+        `profileName${suffix}`,
+        profile.name || symbol
     );
 
-    setText(
-        `profileTicker${n}`,
-        symbol
-            ? symbol
-            : "Belum tersedia"
-    );
 
     setText(
-        `sector${n}`,
-        sector
+        `profileTicker${suffix}`,
+        profile.code || symbol
     );
 
-    setText(
-        `industry${n}`,
-        industry
-    );
 
     setText(
-        `employees${n}`,
+        `sector${suffix}`,
+        profile.sector
+    );
+
+
+    setText(
+        `industry${suffix}`,
+        profile.industry
+    );
+
+
+    /*
+        Zapi profile yang kita cek
+        tidak memiliki field employees.
+    */
+
+    setText(
+        `employees${suffix}`,
         "Belum tersedia"
     );
 
-    const websiteElement =
-        $(`website${n}`);
-
-    if (websiteElement) {
-
-        websiteElement.innerHTML = "";
-
-        if (website) {
-
-            const link =
-                document.createElement("a");
-
-            link.href =
-                normalizeWebsite(website);
-
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
-
-            link.textContent = website;
-
-            websiteElement.appendChild(
-                link
-            );
-
-        } else {
-
-            websiteElement.textContent =
-                "Belum tersedia";
-        }
-    }
 
     setText(
-        `description${n}`,
-        business
-            ? business
-            : "Belum tersedia"
+        `listingDate${suffix}`,
+        formatDate(profile.listingDate)
     );
 
 
-    const logoElement =
-        $(`profileLogo${n}`);
-
-    if (logoElement) {
-
-        if (logo) {
-
-            logoElement.src = logo;
-
-            logoElement.style.display =
-                "block";
-
-            logoElement.onerror =
-                () => {
-                    logoElement.style.display =
-                        "none";
-                };
-
-        } else {
-
-            logoElement.style.display =
-                "none";
-        }
-    }
+    setText(
+        `listingBoard${suffix}`,
+        profile.listingBoard
+    );
 
 
-    const headerLogo =
-        $(`logo${n}`);
+    setText(
+        `description${suffix}`,
+        profile.mainBusiness
+    );
 
-    if (headerLogo) {
 
-        if (logo) {
+    renderWebsite(
+        `website${suffix}`,
+        profile.website
+    );
 
-            headerLogo.src = logo;
-            headerLogo.style.display =
-                "block";
 
-            headerLogo.onerror =
-                () => {
-                    headerLogo.style.display =
-                        "none";
-                };
+    renderLogo(
+        `profileLogo${suffix}`,
+        profile.logo
+    );
 
-        } else {
 
-            headerLogo.style.display =
-                "none";
-        }
-    }
+    renderLogo(
+        `logo${suffix}`,
+        profile.logo
+    );
+
 }
+
+
+
+/* =========================
+   WEBSITE
+========================= */
+
+function renderWebsite(id, website) {
+
+    const element = $(id);
+
+    if (!element) {
+        return;
+    }
+
+
+    element.replaceChildren();
+
+
+    if (!website) {
+
+        element.textContent =
+            "Belum tersedia";
+
+        return;
+
+    }
+
+
+    let href =
+        String(website).trim();
+
+
+    if (
+        !href.startsWith("http://") &&
+        !href.startsWith("https://")
+    ) {
+
+        href =
+            "https://" + href;
+
+    }
+
+
+    const link =
+        document.createElement("a");
+
+
+    link.href = href;
+
+    link.target = "_blank";
+
+    link.rel = "noopener noreferrer";
+
+    link.textContent =
+        website;
+
+
+    link.className =
+        "document-link";
+
+
+    element.appendChild(link);
+
+}
+
+
+
+/* =========================
+   LOGO
+========================= */
+
+function renderLogo(id, url) {
+
+    const container =
+        $(id);
+
+    if (!container) {
+        return;
+    }
+
+
+    if (!url) {
+        return;
+    }
+
+
+    const image =
+        document.createElement("img");
+
+
+    image.src = url;
+
+    image.alt = "Company logo";
+
+
+    image.onerror = () => {
+
+        image.remove();
+
+        container.textContent = "?";
+
+    };
+
+
+    container.replaceChildren(image);
+
+}
+
 
 
 /* =========================
@@ -469,490 +657,597 @@ function renderProfile(rawProfile, index) {
 ========================= */
 
 function renderDividends(
-    rawProfile,
-    rawDividends,
-    index
+    dividendResponse,
+    profileResponse,
+    index,
+    symbol
 ) {
 
-    const n = index + 1;
+    const suffix =
+        index + 1;
 
-    const profile =
-        rawProfile?.data || {};
+
+    const title =
+        $(`dividendTitle${suffix}`);
+
+
+    if (title) {
+
+        title.textContent =
+            symbol;
+
+    }
+
 
     /*
-      Profile memiliki dividends[]
-      dan saat ini lebih berguna daripada
-      endpoint dividends yang default-nya
-      hanya mengecek bulan berjalan.
+        Profile dividends lebih berguna
+        karena endpoint dividends default
+        bisa hanya mencari bulan berjalan.
     */
 
-    let dividends =
-        Array.isArray(profile.dividends)
-            ? profile.dividends
-            : [];
+    let dividends = [];
+
+
+    if (
+        profileResponse &&
+        !profileResponse.__error &&
+        profileResponse.data
+    ) {
+
+        dividends =
+            safeArray(
+                profileResponse.data.dividends
+            );
+
+    }
 
 
     if (
         dividends.length === 0 &&
-        Array.isArray(
-            rawDividends?.data?.items
-        )
+        dividendResponse &&
+        !dividendResponse.__error &&
+        dividendResponse.data
     ) {
 
         dividends =
-            rawDividends.data.items;
+            safeArray(
+                dividendResponse.data.items
+            );
+
     }
 
 
-    const container =
-        $(`dividendList${n}`);
-
-    if (!container) return;
-
-    container.innerHTML = "";
+    const list =
+        $(`dividendList${suffix}`);
 
 
-    if (dividends.length === 0) {
-
-        const empty =
-            document.createElement("div");
-
-        empty.className =
-            "empty-state";
-
-        empty.textContent =
-            "Belum ada data dividen pada respons API.";
-
-        container.appendChild(empty);
-
-        setText(
-            `dividendTitle${n}`,
-            "Dividen"
-        );
-
+    if (!list) {
         return;
     }
 
 
-    setText(
-        `dividendTitle${n}`,
-        `Dividen ${profile.code || ""}`
-    );
+    list.replaceChildren();
 
 
-    dividends.forEach(
-        (dividend) => {
+    if (dividends.length === 0) {
 
-            const card =
+        list.appendChild(
+            createEmptyState(
+                "Belum ada data dividen pada response yang tersedia."
+            )
+        );
+
+        return;
+
+    }
+
+
+    /*
+        Tampilkan maksimal 10 data
+        agar halaman tidak terlalu panjang.
+    */
+
+    dividends
+        .slice(0, 10)
+        .forEach((dividend) => {
+
+            const item =
                 document.createElement("div");
 
-            card.className =
-                "dividend-card";
-
-
-            const title =
-                document.createElement("h4");
-
-            title.textContent =
-                `Tahun buku ${dividend.bookYear || "—"}`;
+            item.className =
+                "document-item";
 
 
             const info =
                 document.createElement("div");
 
             info.className =
-                "dividend-info";
+                "document-info";
 
 
-            const rows = [
-                [
-                    "Cash per Share",
-                    formatPrice(
-                        dividend.cashPerShare
-                    )
-                ],
-                [
-                    "Cum Date",
-                    formatDate(
-                        dividend.cumDate
-                    )
-                ],
-                [
-                    "Ex Date",
-                    formatDate(
-                        dividend.exDate
-                    )
-                ],
-                [
-                    "Record Date",
-                    formatDate(
-                        dividend.recordDate
-                    )
-                ],
-                [
-                    "Payment Date",
-                    formatDate(
-                        dividend.paymentDate
-                    )
-                ]
-            ];
+            const name =
+                document.createElement("span");
+
+            name.className =
+                "document-name";
 
 
-            rows.forEach(
-                ([label, value]) => {
-
-                    const row =
-                        document.createElement(
-                            "div"
-                        );
-
-                    const labelEl =
-                        document.createElement(
-                            "span"
-                        );
-
-                    labelEl.textContent =
-                        label;
+            name.textContent =
+                `Tahun buku ${dividend.bookYear || "-"}`;
 
 
-                    const valueEl =
-                        document.createElement(
-                            "strong"
-                        );
+            const meta =
+                document.createElement("span");
 
-                    valueEl.textContent =
-                        value;
+            meta.className =
+                "document-meta";
 
 
-                    row.appendChild(labelEl);
-                    row.appendChild(valueEl);
+            meta.textContent =
+                `Cash per Share: ${
+                    dividend.cashPerShare ??
+                    "Belum tersedia"
+                } • Cum: ${
+                    formatDate(dividend.cumDate)
+                } • Ex: ${
+                    formatDate(dividend.exDate)
+                }`;
 
-                    info.appendChild(row);
-                }
-            );
+
+            info.appendChild(name);
+
+            info.appendChild(meta);
+
+            item.appendChild(info);
 
 
-            card.appendChild(title);
-            card.appendChild(info);
+            list.appendChild(item);
 
-            container.appendChild(card);
-        }
-    );
+        });
+
 }
 
 
+
 /* =========================
-   FINANCIAL REPORTS
+   FINANCIAL
 ========================= */
 
 function renderFinancial(
-    rawFinancial,
-    index
+    response,
+    index,
+    symbol
 ) {
 
-    const n = index + 1;
-
-    const container =
-        $(`financialList${n}`);
-
-    if (!container) return;
-
-    container.innerHTML = "";
-
-
-    const reports =
-        rawFinancial?.data?.data || [];
-
-
-    const attachments = [];
-
-
-    reports.forEach(report => {
-
-        const files =
-            Array.isArray(
-                report.Attachments
-            )
-                ? report.Attachments
-                : [];
-
-        files.forEach(file => {
-
-            attachments.push({
-                ...file,
-                reportYear:
-                    report.Report_Year ||
-                    file.Report_Year,
-                reportPeriod:
-                    report.Report_Period ||
-                    file.Report_Period
-            });
-
-        });
-    });
+    const suffix =
+        index + 1;
 
 
     setText(
-        `reportTitle${n}`,
-        attachments.length
-            ? `Dokumen Keuangan ${n}`
-            : "Dokumen Keuangan"
+        `reportTitle${suffix}`,
+        `${symbol} — Financial Report`
     );
 
 
-    if (attachments.length === 0) {
+    const list =
+        $(`financialList${suffix}`);
 
-        const empty =
-            document.createElement("div");
 
-        empty.className =
-            "empty-state";
-
-        empty.textContent =
-            "Belum ada dokumen keuangan.";
-
-        container.appendChild(empty);
-
+    if (!list) {
         return;
     }
 
 
-    attachments.forEach(
-        (file) => {
+    list.replaceChildren();
 
-            const card =
+
+    if (
+        !response ||
+        response.__error ||
+        !response.data ||
+        !Array.isArray(response.data.data)
+    ) {
+
+        list.appendChild(
+            createEmptyState(
+                "Dokumen laporan keuangan tidak tersedia."
+            )
+        );
+
+        return;
+
+    }
+
+
+    const reports =
+        response.data.data;
+
+
+    const documents = [];
+
+
+    reports.forEach((report) => {
+
+        safeArray(
+            report.Attachments
+        ).forEach((attachment) => {
+
+            documents.push({
+                report,
+                attachment
+            });
+
+        });
+
+    });
+
+
+    if (documents.length === 0) {
+
+        list.appendChild(
+            createEmptyState(
+                "Belum ada attachment laporan keuangan."
+            )
+        );
+
+        return;
+
+    }
+
+
+    documents
+        .slice(0, 10)
+        .forEach(({ report, attachment }) => {
+
+            const item =
                 document.createElement("div");
 
-            card.className =
-                "document-card";
+            item.className =
+                "document-item";
 
 
-            const title =
-                document.createElement("h4");
+            const info =
+                document.createElement("div");
 
-            title.textContent =
-                file.File_Name ||
-                "Dokumen keuangan";
+            info.className =
+                "document-info";
+
+
+            const name =
+                document.createElement("span");
+
+            name.className =
+                "document-name";
+
+
+            name.textContent =
+                attachment.File_Name ||
+                attachment.fileName ||
+                attachment.FileName ||
+                "Financial document";
 
 
             const meta =
-                document.createElement("p");
+                document.createElement("span");
+
+            meta.className =
+                "document-meta";
+
+
+            const year =
+                report.Year ||
+                report.year ||
+                2024;
+
+
+            const period =
+                report.Period ||
+                report.period ||
+                "audit";
+
+
+            const size =
+                formatFileSize(
+                    attachment.File_Size ??
+                    attachment.fileSize ??
+                    0
+                );
+
 
             meta.textContent =
-                [
-                    file.Report_Year
-                        ? `Tahun ${file.Report_Year}`
-                        : null,
-
-                    file.Report_Period
-                        ? file.Report_Period
-                        : null,
-
-                    file.File_Type
-                        ? file.File_Type
-                        : null,
-
-                    formatFileSize(
-                        file.File_Size
-                    )
-                ]
-                    .filter(Boolean)
-                    .join(" • ");
+                `${year} • ${period}${
+                    size
+                        ? " • " + size
+                        : ""
+                }`;
 
 
-            card.appendChild(title);
-            card.appendChild(meta);
+            info.appendChild(name);
+
+            info.appendChild(meta);
+
+            item.appendChild(info);
+
 
             /*
-              File_Path dari financial-report
-              belum kita anggap sebagai URL
-              publik yang pasti.
-              Jadi jangan membuat link palsu.
+                Jangan membuat link palsu.
+                Financial endpoint yang kita cek
+                belum memberikan URL download yang
+                tervalidasi.
             */
 
-            container.appendChild(card);
-        }
-    );
+            list.appendChild(item);
+
+        });
+
 }
 
 
+
 /* =========================
-   OWNERSHIP FILES
+   OWNERSHIP
 ========================= */
 
 function renderOwnership(
-    rawOwnership,
-    index
+    response,
+    index,
+    symbol
 ) {
 
-    const n = index + 1;
-
-    const container =
-        $(`ownershipList${n}`);
-
-    if (!container) return;
-
-    container.innerHTML = "";
-
-
-    const files =
-        rawOwnership?.data?.data || [];
+    const suffix =
+        index + 1;
 
 
     setText(
-        `ownershipTitle${n}`,
-        files.length
-            ? `Dokumen Kepemilikan (${files.length})`
-            : "Dokumen Kepemilikan"
+        `ownershipTitle${suffix}`,
+        symbol
     );
+
+
+    const list =
+        $(`ownershipList${suffix}`);
+
+
+    if (!list) {
+        return;
+    }
+
+
+    list.replaceChildren();
+
+
+    if (
+        !response ||
+        response.__error ||
+        !response.data ||
+        !Array.isArray(response.data.data)
+    ) {
+
+        list.appendChild(
+            createEmptyState(
+                "Dokumen ownership tidak tersedia."
+            )
+        );
+
+        return;
+
+    }
+
+
+    const files =
+        response.data.data;
 
 
     if (files.length === 0) {
 
-        const empty =
-            document.createElement("div");
-
-        empty.className =
-            "empty-state";
-
-        empty.textContent =
-            "Belum ada dokumen kepemilikan.";
-
-        container.appendChild(empty);
+        list.appendChild(
+            createEmptyState(
+                "Belum ada dokumen ownership."
+            )
+        );
 
         return;
+
     }
 
 
-    files.forEach(file => {
+    files
+        .slice(0, 10)
+        .forEach((file) => {
 
-        const card =
-            document.createElement("div");
+            const item =
+                document.createElement("div");
 
-        card.className =
-            "document-card";
-
-
-        const title =
-            document.createElement("h4");
-
-        title.textContent =
-            file.fileName ||
-            "Dokumen kepemilikan";
+            item.className =
+                "document-item";
 
 
-        const meta =
-            document.createElement("p");
+            const info =
+                document.createElement("div");
 
-        meta.textContent =
-            [
-                file.categoryLabel,
-                file.publishedAt
-                    ? formatDate(
-                        file.publishedAt
-                    )
-                    : null
-            ]
-                .filter(Boolean)
-                .join(" • ");
+            info.className =
+                "document-info";
 
 
-        card.appendChild(title);
-        card.appendChild(meta);
+            const name =
+                document.createElement("span");
+
+            name.className =
+                "document-name";
 
 
-        if (file.url) {
-
-            const link =
-                document.createElement("a");
-
-            link.href = file.url;
-
-            link.target = "_blank";
-            link.rel =
-                "noopener noreferrer";
-
-            link.textContent =
-                "Buka Dokumen";
-
-            link.className =
-                "document-link";
-
-            card.appendChild(link);
-        }
+            name.textContent =
+                file.fileName ||
+                "Ownership file";
 
 
-        container.appendChild(card);
-    });
+            const meta =
+                document.createElement("span");
+
+            meta.className =
+                "document-meta";
+
+
+            meta.textContent =
+                `${
+                    file.categoryLabel ||
+                    file.category ||
+                    "Ownership"
+                } • ${
+                    formatDate(file.publishedAt)
+                }`;
+
+
+            info.appendChild(name);
+
+            info.appendChild(meta);
+
+
+            item.appendChild(info);
+
+
+            if (file.url) {
+
+                const link =
+                    document.createElement("a");
+
+
+                link.href =
+                    file.url;
+
+
+                link.target =
+                    "_blank";
+
+
+                link.rel =
+                    "noopener noreferrer";
+
+
+                link.className =
+                    "document-link";
+
+
+                link.textContent =
+                    "Buka";
+
+
+                item.appendChild(link);
+
+            }
+
+
+            list.appendChild(item);
+
+        });
+
 }
 
 
+
 /* =========================
-   HISTORY
+   EMPTY STATE
 ========================= */
 
-function getHistory(rawHistory) {
+function createEmptyState(message) {
 
-    const items =
-        rawHistory?.data?.items;
+    const element =
+        document.createElement("div");
 
-    if (!Array.isArray(items)) {
+
+    element.className =
+        "empty-state";
+
+
+    element.textContent =
+        message;
+
+
+    return element;
+
+}
+
+
+
+/* =========================
+   HISTORY / CHART
+========================= */
+
+function extractHistory(response) {
+
+    if (
+        !response ||
+        response.__error ||
+        !response.data
+    ) {
+
         return [];
+
     }
 
-    return [...items].sort(
-        (a, b) =>
-            new Date(a.date) -
-            new Date(b.date)
+
+    return safeArray(
+        response.data.items
     );
+
 }
 
-
-/* =========================
-   CHART
-========================= */
 
 function drawPriceChart(
-    stockA,
-    stockB
+    history1,
+    history2,
+    symbol1,
+    symbol2
 ) {
 
     const canvas =
         $("priceChart");
 
-    if (!canvas) return;
+
+    if (!canvas) {
+        return;
+    }
 
 
-    const ctx =
-        canvas.getContext("2d");
+    const container =
+        canvas.parentElement;
 
 
     const rect =
-        canvas.getBoundingClientRect();
-
-
-    const width =
-        Math.max(
-            rect.width,
-            600
-        );
-
-    const height =
-        Math.max(
-            rect.height,
-            300
-        );
+        container.getBoundingClientRect();
 
 
     const dpr =
         window.devicePixelRatio || 1;
 
 
+    const width =
+        Math.max(rect.width, 300);
+
+
+    const height =
+        Math.max(rect.height, 240);
+
+
     canvas.width =
         width * dpr;
 
+
     canvas.height =
         height * dpr;
+
+
+    canvas.style.width =
+        width + "px";
+
+
+    canvas.style.height =
+        height + "px";
+
+
+    const ctx =
+        canvas.getContext("2d");
+
 
     ctx.setTransform(
         dpr,
@@ -964,124 +1259,91 @@ function drawPriceChart(
     );
 
 
-    ctx.clearRect(
-        0,
-        0,
-        width,
-        height
-    );
+    /*
+        Sort oldest -> newest
+    */
+
+    const first =
+        [...history1]
+            .filter(
+                item =>
+                    item &&
+                    item.date &&
+                    Number.isFinite(
+                        Number(item.close)
+                    )
+            )
+            .sort(
+                (a, b) =>
+                    new Date(a.date) -
+                    new Date(b.date)
+            );
 
 
-    const historyA =
-        getHistory(
-            stockA?.history
-        );
+    const second =
+        [...history2]
+            .filter(
+                item =>
+                    item &&
+                    item.date &&
+                    Number.isFinite(
+                        Number(item.close)
+                    )
+            )
+            .sort(
+                (a, b) =>
+                    new Date(a.date) -
+                    new Date(b.date)
+            );
 
-    const historyB =
-        getHistory(
-            stockB?.history
-        );
+
+    const all =
+        [...first, ...second];
 
 
-    if (
-        historyA.length === 0 &&
-        historyB.length === 0
-    ) {
+    if (all.length === 0) {
 
-        setText(
-            "chartSubtitle",
-            "Data historis belum tersedia"
+        drawChartMessage(
+            ctx,
+            width,
+            height,
+            "Data harga belum tersedia."
         );
 
         return;
+
     }
 
 
-    setText(
-        "chartSubtitle",
-        "Pergerakan harga penutupan"
-    );
-
-
-    const dateMapA =
-        new Map(
-            historyA.map(item => [
-                item.date,
-                numberValue(
-                    item.close
-                )
-            ])
+    const values =
+        all.map(
+            item =>
+                Number(item.close)
         );
 
 
-    const dateMapB =
-        new Map(
-            historyB.map(item => [
-                item.date,
-                numberValue(
-                    item.close
-                )
-            ])
-        );
-
-
-    const dates =
-        [
-            ...new Set([
-                ...historyA.map(
-                    x => x.date
-                ),
-                ...historyB.map(
-                    x => x.date
-                )
-            ])
-        ].sort(
-            (a, b) =>
-                new Date(a) -
-                new Date(b)
-        );
-
-
-    const values = [];
-
-
-    dates.forEach(date => {
-
-        const a =
-            dateMapA.get(date);
-
-        const b =
-            dateMapB.get(date);
-
-        if (a !== undefined) {
-            values.push(a);
-        }
-
-        if (b !== undefined) {
-            values.push(b);
-        }
-    });
-
-
-    if (values.length === 0) return;
-
-
-    const minValue =
+    let min =
         Math.min(...values);
 
-    const maxValue =
+
+    let max =
         Math.max(...values);
 
 
-    const range =
-        maxValue - minValue || 1;
+    if (min === max) {
+
+        min -= 1;
+
+        max += 1;
+
+    }
 
 
     const padding = {
-        left: 65,
-        right: 20,
-        top: 25,
-        bottom: 45
+        top: 30,
+        right: 25,
+        bottom: 45,
+        left: 60
     };
 
 
@@ -1090,39 +1352,85 @@ function drawPriceChart(
         padding.left -
         padding.right;
 
+
     const chartHeight =
         height -
         padding.top -
         padding.bottom;
 
 
-    /* GRID */
+    const styles =
+        getComputedStyle(document.body);
 
-    ctx.font =
-        "12px Arial";
 
-    ctx.textAlign =
-        "right";
+    const primary =
+        styles
+            .getPropertyValue("--primary")
+            .trim() ||
+        "#2563eb";
 
-    ctx.textBaseline =
-        "middle";
+
+    const accent =
+        styles
+            .getPropertyValue("--accent")
+            .trim() ||
+        "#7c3aed";
+
+
+    const border =
+        styles
+            .getPropertyValue("--border")
+            .trim() ||
+        "#e2e8f0";
+
+
+    const muted =
+        styles
+            .getPropertyValue("--text-muted")
+            .trim() ||
+        "#94a3b8";
+
+
+    const text =
+        styles
+            .getPropertyValue("--text-secondary")
+            .trim() ||
+        "#475569";
+
+
+    ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    /*
+        Grid
+    */
+
+    ctx.lineWidth = 1;
+
+    ctx.strokeStyle =
+        border;
+
+
+    const gridLines = 5;
 
 
     for (
         let i = 0;
-        i <= 5;
+        i <= gridLines;
         i++
     ) {
 
         const y =
             padding.top +
-            chartHeight *
-            (i / 5);
-
-        const value =
-            maxValue -
-            range *
-            (i / 5);
+            (
+                chartHeight /
+                gridLines
+            ) * i;
 
 
         ctx.beginPath();
@@ -1133,735 +1441,881 @@ function drawPriceChart(
         );
 
         ctx.lineTo(
-            width -
-            padding.right,
+            width - padding.right,
             y
         );
 
-        ctx.strokeStyle =
-            "rgba(128,128,128,0.2)";
-
         ctx.stroke();
+
+
+        const value =
+            max -
+            (
+                (max - min) /
+                gridLines
+            ) * i;
 
 
         ctx.fillStyle =
-            "rgba(128,128,128,0.8)";
+            muted;
+
+
+        ctx.font =
+            "10px system-ui";
+
+
+        ctx.textAlign =
+            "right";
+
 
         ctx.fillText(
-            Math.round(value)
-                .toLocaleString("id-ID"),
-            padding.left - 10,
-            y
-        );
-    }
-
-
-    function drawLine(
-        map,
-        lineWidth
-    ) {
-
-        const points = [];
-
-
-        dates.forEach(
-            (date, index) => {
-
-                const value =
-                    map.get(date);
-
-                if (
-                    value === undefined ||
-                    value === null
-                ) {
-                    return;
-                }
-
-
-                const x =
-                    padding.left +
-                    (
-                        index /
-                        Math.max(
-                            dates.length - 1,
-                            1
-                        )
-                    ) *
-                    chartWidth;
-
-
-                const y =
-                    padding.top +
-                    (
-                        (maxValue -
-                        value) /
-                        range
-                    ) *
-                    chartHeight;
-
-
-                points.push({
-                    x,
-                    y
-                });
-            }
+            formatNumber(
+                Math.round(value)
+            ),
+            padding.left - 8,
+            y + 4
         );
 
-
-        if (points.length === 0) {
-            return;
-        }
-
-
-        ctx.beginPath();
-
-        points.forEach(
-            (point, index) => {
-
-                if (index === 0) {
-
-                    ctx.moveTo(
-                        point.x,
-                        point.y
-                    );
-
-                } else {
-
-                    ctx.lineTo(
-                        point.x,
-                        point.y
-                    );
-                }
-            }
-        );
-
-
-        ctx.lineWidth =
-            lineWidth;
-
-        ctx.strokeStyle =
-            "currentColor";
-
-        /*
-          Canvas tidak mendukung
-          currentColor secara konsisten,
-          jadi ambil warna default
-          dari CSS.
-        */
-
-        ctx.strokeStyle =
-            getComputedStyle(canvas)
-                .color ||
-            "#2563eb";
-
-        ctx.stroke();
     }
 
 
     /*
-      Untuk membedakan dua saham,
-      gunakan warna dari CSS variables
-      bila tersedia.
+        Combine dates.
     */
 
-    const root =
-        getComputedStyle(
-            document.documentElement
+    const dates =
+        [
+            ...new Set(
+                [
+                    ...first,
+                    ...second
+                ].map(
+                    item =>
+                        item.date
+                )
+            )
+        ].sort(
+            (a, b) =>
+                new Date(a) -
+                new Date(b)
         );
 
 
-    const color1 =
-        root.getPropertyValue(
-            "--primary"
-        ).trim() ||
-        "#2563eb";
+    function xForDate(date) {
+
+        if (dates.length <= 1) {
+
+            return padding.left +
+                chartWidth / 2;
+
+        }
 
 
-    const color2 =
-        root.getPropertyValue(
-            "--accent"
-        ).trim() ||
-        "#f59e0b";
+        const index =
+            dates.indexOf(date);
 
 
-    function drawColoredLine(
-        map,
+        return padding.left +
+            (
+                index /
+                (dates.length - 1)
+            ) *
+            chartWidth;
+
+    }
+
+
+    function yForValue(value) {
+
+        return padding.top +
+            (
+                (max - value) /
+                (max - min)
+            ) *
+            chartHeight;
+
+    }
+
+
+    function drawLine(
+        items,
         color
     ) {
 
-        const points = [];
-
-
-        dates.forEach(
-            (date, index) => {
-
-                const value =
-                    map.get(date);
-
-                if (
-                    value === undefined ||
-                    value === null
-                ) {
-                    return;
-                }
-
-
-                const x =
-                    padding.left +
-                    (
-                        index /
-                        Math.max(
-                            dates.length - 1,
-                            1
-                        )
-                    ) *
-                    chartWidth;
-
-
-                const y =
-                    padding.top +
-                    (
-                        (maxValue -
-                        value) /
-                        range
-                    ) *
-                    chartHeight;
-
-
-                points.push({
-                    x,
-                    y
-                });
-            }
-        );
-
-
-        if (points.length === 0) {
+        if (items.length === 0) {
             return;
         }
 
 
         ctx.beginPath();
 
-        points.forEach(
-            (point, index) => {
+
+        items.forEach(
+            (item, index) => {
+
+                const x =
+                    xForDate(
+                        item.date
+                    );
+
+
+                const y =
+                    yForValue(
+                        Number(
+                            item.close
+                        )
+                    );
+
 
                 if (index === 0) {
 
                     ctx.moveTo(
-                        point.x,
-                        point.y
+                        x,
+                        y
                     );
 
-                } else {
+                }
+                else {
 
                     ctx.lineTo(
-                        point.x,
-                        point.y
+                        x,
+                        y
                     );
+
                 }
+
             }
         );
 
 
+        ctx.strokeStyle =
+            color;
+
+
         ctx.lineWidth = 2.5;
 
-        ctx.strokeStyle = color;
+        ctx.lineJoin =
+            "round";
+
+        ctx.lineCap =
+            "round";
+
 
         ctx.stroke();
 
 
         /*
-          Titik terakhir
+            Last point
         */
 
         const last =
-            points[points.length - 1];
+            items[
+                items.length - 1
+            ];
+
+
+        const lx =
+            xForDate(
+                last.date
+            );
+
+
+        const ly =
+            yForValue(
+                Number(last.close)
+            );
+
 
         ctx.beginPath();
 
         ctx.arc(
-            last.x,
-            last.y,
+            lx,
+            ly,
             4,
             0,
             Math.PI * 2
         );
 
+
         ctx.fillStyle =
             color;
 
+
         ctx.fill();
+
     }
 
 
-    drawColoredLine(
-        dateMapA,
-        color1
+    drawLine(
+        first,
+        primary
     );
 
 
-    drawColoredLine(
-        dateMapB,
-        color2
+    drawLine(
+        second,
+        accent
     );
 
 
-    /* X AXIS LABEL */
+    /*
+        Date labels
+    */
 
     ctx.fillStyle =
-        "rgba(128,128,128,0.8)";
+        text;
+
+
+    ctx.font =
+        "10px system-ui";
+
 
     ctx.textAlign =
         "center";
 
-    ctx.textBaseline =
-        "top";
+
+    const labelIndexes =
+        dates.length <= 4
+            ? dates.map(
+                (_, i) => i
+            )
+            : [
+                0,
+                Math.floor(
+                    dates.length / 2
+                ),
+                dates.length - 1
+            ];
 
 
-    const labelCount =
-        Math.min(
-            5,
-            dates.length
-        );
+    labelIndexes.forEach(
+        index => {
+
+            const date =
+                dates[index];
 
 
-    for (
-        let i = 0;
-        i < labelCount;
-        i++
-    ) {
+            const x =
+                xForDate(date);
 
-        const index =
-            Math.round(
-                i *
-                (
-                    (dates.length - 1) /
-                    Math.max(
-                        labelCount - 1,
-                        1
-                    )
-                )
+
+            ctx.fillText(
+                formatShortDate(date),
+                x,
+                height - 15
             );
 
+        }
+    );
 
-        const date =
-            dates[index];
-
-
-        const x =
-            padding.left +
-            (
-                index /
-                Math.max(
-                    dates.length - 1,
-                    1
-                )
-            ) *
-            chartWidth;
+}
 
 
-        ctx.fillText(
-            formatDate(date),
-            x,
-            height - 30
-        );
+function formatShortDate(value) {
+
+    const date =
+        new Date(value);
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return value;
+
     }
 
 
-    /* LEGEND */
+    return new Intl.DateTimeFormat(
+        "id-ID",
+        {
+            day: "2-digit",
+            month: "short"
+        }
+    ).format(date);
 
-    setText(
-        "chartLegend1",
-        stockA?.summary?.symbol ||
-        "Saham 1"
-    );
-
-    setText(
-        "chartLegend2",
-        stockB?.summary?.symbol ||
-        "Saham 2"
-    );
 }
 
 
-/* =========================
-   QUICK COMPARISON
-========================= */
-
-function renderComparison(
-    stock,
-    index
-) {
-
-    if (!stock) return;
-
-    const n = index + 1;
-
-    const summary =
-        stock.summary || {};
-
-    const profile =
-        stock.profile?.data || {};
-
-
-    setText(
-        `tableTicker${n}`,
-        summary.symbol ||
-        profile.code
-    );
-
-    setText(
-        `tablePrice${n}`,
-        formatPrice(
-            summary.price
-        )
-    );
-
-
-    const dividends =
-        Array.isArray(
-            profile.dividends
-        )
-            ? profile.dividends
-            : [];
-
-
-    if (dividends.length > 0) {
-
-        const latest =
-            dividends[0];
-
-        setText(
-            `tableDividend${n}`,
-            formatPrice(
-                latest.cashPerShare
-            )
-        );
-
-    } else {
-
-        setText(
-            `tableDividend${n}`,
-            "Belum tersedia"
-        );
-    }
-
-
-    /*
-      Fundamental belum tersedia
-      dari endpoint yang kita gunakan.
-    */
-
-    setText(
-        `tablePer${n}`,
-        "Belum tersedia"
-    );
-
-    setText(
-        `tablePbv${n}`,
-        "Belum tersedia"
-    );
-
-
-    setText(
-        `tableVolume${n}`,
-        formatNumber(
-            summary.volume
-        )
-    );
-
-    setText(
-        `tableForeignBuy${n}`,
-        formatNumber(
-            summary.foreignBuy
-        )
-    );
-
-    setText(
-        `tableForeignSell${n}`,
-        formatNumber(
-            summary.foreignSell
-        )
-    );
-}
-
-
-/* =========================
-   LOAD ONE STOCK
-========================= */
-
-async function loadStock(
-    ticker,
-    index
-) {
-
-    const stock =
-        await fetchStock(ticker);
-
-
-    stockResults[index] =
-        stock;
-
-
-    renderSummary(
-        stock.summary,
-        index
-    );
-
-
-    renderProfile(
-        stock.profile,
-        index
-    );
-
-
-    renderDividends(
-        stock.profile,
-        stock.dividends,
-        index
-    );
-
-
-    renderFinancial(
-        stock.financial,
-        index
-    );
-
-
-    renderOwnership(
-        stock.ownership,
-        index
-    );
-
-
-    renderComparison(
-        stock,
-        index
-    );
-
-
-    return stock;
-}
-
-
-/* =========================
-   UI STATUS
-========================= */
-
-function setLoading(
-    loading
-) {
-
-    const resultSection =
-        $("resultSection");
-
-    if (!resultSection) return;
-
-    if (loading) {
-
-        resultSection.classList.add(
-            "loading"
-        );
-
-    } else {
-
-        resultSection.classList.remove(
-            "loading"
-        );
-    }
-}
-
-
-function setStatus(
+function drawChartMessage(
+    ctx,
+    width,
+    height,
     message
 ) {
 
-    const candidates = [
-        "status",
-        "loadingStatus",
-        "searchStatus"
-    ];
+    const styles =
+        getComputedStyle(document.body);
 
 
-    for (
-        const id of candidates
-    ) {
+    const muted =
+        styles
+            .getPropertyValue("--text-muted")
+            .trim() ||
+        "#94a3b8";
 
-        const el = $(id);
 
-        if (el) {
+    ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
 
-            el.textContent =
-                message;
 
-            return;
-        }
-    }
+    ctx.fillStyle =
+        muted;
+
+
+    ctx.font =
+        "13px system-ui";
+
+
+    ctx.textAlign =
+        "center";
+
+
+    ctx.fillText(
+        message,
+        width / 2,
+        height / 2
+    );
+
 }
 
 
+
 /* =========================
-   MAIN SEARCH
+   SHOW SECTIONS
+========================= */
+
+function showResults() {
+
+    $("result")
+        ?.classList
+        .remove("hidden");
+
+
+    $("comparison")
+        ?.classList
+        .remove("hidden");
+
+
+    $("marketSection")
+        ?.classList
+        .remove("hidden");
+
+
+    $("chartSection")
+        ?.classList
+        .remove("hidden");
+
+
+    $("dividendSection")
+        ?.classList
+        .remove("hidden");
+
+
+    $("profileSection")
+        ?.classList
+        .remove("hidden");
+
+
+    $("financialSection")
+        ?.classList
+        .remove("hidden");
+
+
+    $("ownershipSection")
+        ?.classList
+        .remove("hidden");
+
+}
+
+
+
+/* =========================
+   MAIN COMPARE
 ========================= */
 
 async function compareStocks() {
 
-    const input1 =
-        $("ticker1Input");
+    const stock1 =
+        cleanSymbol(
+            $("stock1")?.value
+        );
 
-    const input2 =
-        $("ticker2Input");
+
+    const stock2 =
+        cleanSymbol(
+            $("stock2")?.value
+        );
+
+
+    const status =
+        $("status");
+
+
+    const button =
+        $("compareButton");
+
+
+    const buttonText =
+        $("buttonText");
 
 
     /*
-      Jika ID berbeda, coba beberapa
-      kemungkinan umum.
+        Validation
     */
 
-    const firstInput =
-        input1 ||
-        $("stock1") ||
-        $("symbol1") ||
-        $("ticker1");
+    if (!stock1 || !stock2) {
 
+        if (status) {
 
-    const secondInput =
-        input2 ||
-        $("stock2") ||
-        $("symbol2") ||
-        $("ticker2");
+            status.className =
+                "status error";
 
+            status.textContent =
+                "Masukkan dua kode saham terlebih dahulu.";
 
-    if (!firstInput) {
-
-        console.error(
-            "Input saham pertama tidak ditemukan."
-        );
+        }
 
         return;
+
     }
 
 
-    const ticker1 =
-        firstInput.value
-            .trim()
-            .toUpperCase()
-            .replace(/\.JK$/, "");
+    if (stock1 === stock2) {
 
+        if (status) {
 
-    const ticker2 =
-        secondInput
-            ? secondInput.value
-                .trim()
-                .toUpperCase()
-                .replace(/\.JK$/, "")
-            : "";
+            status.className =
+                "status error";
 
+            status.textContent =
+                "Pilih dua saham yang berbeda.";
 
-    if (!ticker1) {
-
-        setStatus(
-            "Masukkan kode saham pertama."
-        );
+        }
 
         return;
+
     }
 
 
-    setLoading(true);
+    /*
+        Loading
+    */
 
-    setStatus(
-        "Mengambil data saham..."
-    );
+    if (button) {
+        button.disabled = true;
+    }
 
 
-    stockResults = [
-        null,
-        null
-    ];
+    if (buttonText) {
+
+        buttonText.textContent =
+            "Memuat data...";
+
+    }
+
+
+    if (status) {
+
+        status.className =
+            "status loading";
+
+        status.textContent =
+            "Mengambil data dari IDX...";
+
+    }
 
 
     try {
 
-        const requests = [
-            loadStock(
-                ticker1,
-                0
-            )
-        ];
+        /*
+            Load dua saham bersamaan.
+        */
+
+        const [
+            stockData1,
+            stockData2
+        ] = await Promise.all([
+            loadStock(stock1),
+            loadStock(stock2)
+        ]);
 
 
-        if (ticker2) {
+        /*
+            Render
+        */
 
-            requests.push(
-                loadStock(
-                    ticker2,
-                    1
-                )
+        renderSummary(
+            stockData1.summary,
+            0,
+            stock1
+        );
+
+
+        renderSummary(
+            stockData2.summary,
+            1,
+            stock2
+        );
+
+
+        renderProfile(
+            stockData1.profile,
+            0,
+            stock1
+        );
+
+
+        renderProfile(
+            stockData2.profile,
+            1,
+            stock2
+        );
+
+
+        renderDividends(
+            stockData1.dividends,
+            stockData1.profile,
+            0,
+            stock1
+        );
+
+
+        renderDividends(
+            stockData2.dividends,
+            stockData2.profile,
+            1,
+            stock2
+        );
+
+
+        renderFinancial(
+            stockData1.financial,
+            0,
+            stock1
+        );
+
+
+        renderFinancial(
+            stockData2.financial,
+            1,
+            stock2
+        );
+
+
+        renderOwnership(
+            stockData1.ownership,
+            0,
+            stock1
+        );
+
+
+        renderOwnership(
+            stockData2.ownership,
+            1,
+            stock2
+        );
+
+
+        /*
+            History
+        */
+
+        const history1 =
+            extractHistory(
+                stockData1.history
             );
 
-        } else {
 
-            stockResults[1] =
-                null;
-        }
+        const history2 =
+            extractHistory(
+                stockData2.history
+            );
 
 
-        await Promise.all(
-            requests
+        setText(
+            "chartLegend1",
+            stock1
+        );
+
+
+        setText(
+            "chartLegend2",
+            stock2
+        );
+
+
+        setText(
+            "chartSubtitle",
+            `Riwayat harga ${
+                stock1
+            } dan ${
+                stock2
+            } dari data yang tersedia.`
         );
 
 
         drawPriceChart(
-            stockResults[0],
-            stockResults[1]
+            history1,
+            history2,
+            stock1,
+            stock2
         );
 
 
-        const resultSection =
-            $("resultSection");
+        /*
+            Show everything
+        */
 
-        if (resultSection) {
+        showResults();
 
-            resultSection.style.display =
-                "block";
+
+        /*
+            Success
+        */
+
+        if (status) {
+
+            status.className =
+                "status success";
+
+            status.textContent =
+                "Data berhasil diperbarui.";
+
         }
 
 
-        setStatus(
-            "Data berhasil diperbarui."
-        );
+        /*
+            Scroll smoothly to result
+        */
+
+        setTimeout(() => {
+
+            $("result")?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+
+        }, 150);
 
 
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(error);
 
-        setStatus(
-            `Terjadi kesalahan: ${error.message}`
+
+        if (status) {
+
+            status.className =
+                "status error";
+
+            status.textContent =
+                "Terjadi kesalahan saat mengambil data.";
+
+        }
+
+    }
+    finally {
+
+        if (button) {
+            button.disabled = false;
+        }
+
+
+        if (buttonText) {
+
+            buttonText.textContent =
+                "Bandingkan Saham";
+
+        }
+
+    }
+
+}
+
+
+
+/* =========================
+   DARK MODE
+========================= */
+
+function setupTheme() {
+
+    const toggle =
+        $("themeToggle");
+
+
+    if (!toggle) {
+        return;
+    }
+
+
+    const savedTheme =
+        localStorage.getItem(
+            "isc-theme"
         );
 
-    } finally {
 
-        setLoading(false);
+    if (savedTheme === "dark") {
+
+        document.body.classList.add(
+            "dark"
+        );
+
+        toggle.textContent =
+            "☀️";
+
     }
+    else {
+
+        toggle.textContent =
+            "🌙";
+
+    }
+
+
+    toggle.addEventListener(
+        "click",
+        () => {
+
+            document.body.classList.toggle(
+                "dark"
+            );
+
+
+            const isDark =
+                document.body.classList.contains(
+                    "dark"
+                );
+
+
+            localStorage.setItem(
+                "isc-theme",
+                isDark
+                    ? "dark"
+                    : "light"
+            );
+
+
+            toggle.textContent =
+                isDark
+                    ? "☀️"
+                    : "🌙";
+
+
+            /*
+                Redraw chart karena
+                warna CSS berubah.
+            */
+
+            const canvas =
+                $("priceChart");
+
+
+            if (
+                canvas &&
+                !$("chartSection")
+                    ?.classList
+                    .contains("hidden")
+            ) {
+
+                /*
+                    Ambil data yang tersimpan.
+                    draw terakhir ditangani oleh
+                    compareStocks.
+                */
+
+                redrawCurrentChart();
+
+            }
+
+        }
+    );
+
 }
+
+
+
+/* =========================
+   CHART CACHE
+========================= */
+
+let currentChartData = null;
+
+
+function redrawCurrentChart() {
+
+    if (!currentChartData) {
+        return;
+    }
+
+
+    drawPriceChart(
+        currentChartData.history1,
+        currentChartData.history2,
+        currentChartData.symbol1,
+        currentChartData.symbol2
+    );
+
+}
+
+
+
+/*
+    Simpan history untuk dark-mode redraw.
+    Kita bungkus drawPriceChart asli.
+*/
+
+const originalDrawPriceChart =
+    drawPriceChart;
+
+
+drawPriceChart =
+    function (
+        history1,
+        history2,
+        symbol1,
+        symbol2
+    ) {
+
+        currentChartData = {
+            history1,
+            history2,
+            symbol1,
+            symbol2
+        };
+
+
+        originalDrawPriceChart(
+            history1,
+            history2,
+            symbol1,
+            symbol2
+        );
+
+    };
+
 
 
 /* =========================
    ENTER KEY
 ========================= */
 
-function setupEnterKey() {
+function setupInputs() {
 
-    const inputs =
-        document.querySelectorAll(
-            "input"
-        );
-
-
-    inputs.forEach(input => {
+    [
+        $("stock1"),
+        $("stock2")
+    ]
+    .filter(Boolean)
+    .forEach(input => {
 
         input.addEventListener(
             "keydown",
@@ -1871,204 +2325,30 @@ function setupEnterKey() {
                     event.key === "Enter"
                 ) {
 
-                    event.preventDefault();
-
                     compareStocks();
+
                 }
+
             }
         );
 
-
-        input.addEventListener(
-            "input",
-            () => {
-
-                input.value =
-                    input.value.toUpperCase();
-            }
-        );
     });
+
 }
 
 
-/* =========================
-   SEARCH BUTTON
-========================= */
-
-function setupSearchButton() {
-
-    const possibleButtons = [
-        "compareBtn",
-        "compareButton",
-        "searchBtn",
-        "searchButton",
-        "compareStocksBtn"
-    ];
-
-
-    for (
-        const id of possibleButtons
-    ) {
-
-        const button = $(id);
-
-        if (button) {
-
-            button.addEventListener(
-                "click",
-                compareStocks
-            );
-
-            return;
-        }
-    }
-
-
-    /*
-      Kalau tombol memakai class,
-      cari button pertama yang relevan.
-    */
-
-    const buttons =
-        document.querySelectorAll(
-            "button"
-        );
-
-
-    buttons.forEach(button => {
-
-        const text =
-            button.textContent
-                .toLowerCase();
-
-        if (
-            text.includes("banding") ||
-            text.includes("compare") ||
-            text.includes("cari") ||
-            text.includes("search")
-        ) {
-
-            button.addEventListener(
-                "click",
-                compareStocks
-            );
-        }
-    });
-}
-
 
 /* =========================
-   DARK MODE
-========================= */
-
-function setupTheme() {
-
-    const themeButton =
-        $("themeToggle") ||
-        $("darkModeToggle") ||
-        $("themeBtn");
-
-
-    if (!themeButton) return;
-
-
-    themeButton.addEventListener(
-        "click",
-        () => {
-
-            document.body.classList.toggle(
-                "dark-mode"
-            );
-
-            document.documentElement.classList.toggle(
-                "dark-mode"
-            );
-
-
-            const isDark =
-                document.body.classList.contains(
-                    "dark-mode"
-                );
-
-
-            localStorage.setItem(
-                "stock-theme",
-                isDark
-                    ? "dark"
-                    : "light"
-            );
-
-
-            /*
-              Redraw chart supaya warna
-              tetap mengikuti tema.
-            */
-
-            drawPriceChart(
-                stockResults[0],
-                stockResults[1]
-            );
-        }
-    );
-
-
-    const saved =
-        localStorage.getItem(
-            "stock-theme"
-        );
-
-
-    if (saved === "dark") {
-
-        document.body.classList.add(
-            "dark-mode"
-        );
-
-        document.documentElement.classList.add(
-            "dark-mode"
-        );
-    }
-}
-
-
-/* =========================
-   RESPONSIVE CHART
-========================= */
-
-window.addEventListener(
-    "resize",
-    () => {
-
-        if (
-            stockResults[0] ||
-            stockResults[1]
-        ) {
-
-            drawPriceChart(
-                stockResults[0],
-                stockResults[1]
-            );
-        }
-    }
-);
-
-
-/* =========================
-   INITIALIZATION
+   INITIALIZE
 ========================= */
 
 document.addEventListener(
     "DOMContentLoaded",
     () => {
 
-        setupEnterKey();
-
-        setupSearchButton();
-
         setupTheme();
 
-        console.log(
-            "Indonesia Stock Comparison V2 siap."
-        );
+        setupInputs();
+
     }
 );
