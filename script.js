@@ -663,26 +663,19 @@ function renderDividends(
     symbol
 ) {
 
-    const suffix =
-        index + 1;
-
+    const suffix = index + 1;
 
     const title =
         $(`dividendTitle${suffix}`);
 
-
     if (title) {
-
-        title.textContent =
-            symbol;
-
+        title.textContent = symbol;
     }
 
 
     /*
-        Profile dividends lebih berguna
-        karena endpoint dividends default
-        bisa hanya mencari bulan berjalan.
+        Profile dividends digunakan sebagai
+        sumber utama karena lebih lengkap.
     */
 
     let dividends = [];
@@ -742,11 +735,6 @@ function renderDividends(
     }
 
 
-    /*
-        Tampilkan maksimal 10 data
-        agar halaman tidak terlalu panjang.
-    */
-
     dividends
         .slice(0, 10)
         .forEach((dividend) => {
@@ -785,8 +773,7 @@ function renderDividends(
 
             meta.textContent =
                 `Cash per Share: ${
-                    dividend.cashPerShare ??
-                    "Belum tersedia"
+                    dividend.cashPerShare ?? "Belum tersedia"
                 } • Cum: ${
                     formatDate(dividend.cumDate)
                 } • Ex: ${
@@ -795,10 +782,49 @@ function renderDividends(
 
 
             info.appendChild(name);
-
             info.appendChild(meta);
 
+
             item.appendChild(info);
+
+
+            /*
+                Beberapa response mungkin memiliki
+                URL dokumen. Kita hanya membuat tombol
+                jika URL benar-benar diberikan API.
+            */
+
+            const url =
+                dividend.url ||
+                dividend.URL ||
+                dividend.fileUrl ||
+                dividend.fileURL ||
+                dividend.documentUrl ||
+                dividend.documentURL;
+
+
+            if (url) {
+
+                const link =
+                    document.createElement("a");
+
+                link.className =
+                    "document-link";
+
+                link.href = url;
+
+                link.target = "_blank";
+
+                link.rel =
+                    "noopener noreferrer";
+
+                link.textContent =
+                    "Buka Dokumen ↗";
+
+
+                item.appendChild(link);
+
+            }
 
 
             list.appendChild(item);
@@ -920,11 +946,15 @@ function renderFinancial(
                 "document-name";
 
 
-            name.textContent =
+            const fileName =
                 attachment.File_Name ||
                 attachment.fileName ||
                 attachment.FileName ||
                 "Financial document";
+
+
+            name.textContent =
+                fileName;
 
 
             const meta =
@@ -963,25 +993,63 @@ function renderFinancial(
 
 
             info.appendChild(name);
-
             info.appendChild(meta);
+
 
             item.appendChild(info);
 
 
             /*
-                Jangan membuat link palsu.
-                Financial endpoint yang kita cek
-                belum memberikan URL download yang
-                tervalidasi.
+                Cari URL yang benar-benar diberikan
+                oleh API.
+
+                Kita TIDAK menebak URL IDX.
             */
+
+            const url =
+                attachment.url ||
+                attachment.URL ||
+                attachment.File_URL ||
+                attachment.File_Url ||
+                attachment.fileUrl ||
+                attachment.fileURL ||
+                attachment.Download_URL ||
+                attachment.Download_Url ||
+                attachment.downloadUrl ||
+                attachment.DownloadURL;
+
+
+            if (url) {
+
+                const link =
+                    document.createElement("a");
+
+                link.className =
+                    "document-link";
+
+                link.href =
+                    url;
+
+                link.target =
+                    "_blank";
+
+                link.rel =
+                    "noopener noreferrer";
+
+                link.textContent =
+                    "Buka File ↗";
+
+
+                item.appendChild(link);
+
+            }
+
 
             list.appendChild(item);
 
         });
 
 }
-
 
 
 /* =========================
