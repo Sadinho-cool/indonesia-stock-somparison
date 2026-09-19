@@ -795,12 +795,17 @@ function renderDividends(
             */
 
             const url =
-                dividend.url ||
-                dividend.URL ||
-                dividend.fileUrl ||
-                dividend.fileURL ||
-                dividend.documentUrl ||
-                dividend.documentURL;
+    dividend.url ||
+    dividend.URL ||
+    dividend.fileUrl ||
+    dividend.fileURL ||
+    dividend.documentUrl ||
+    dividend.documentURL ||
+    (
+        profileResponse &&
+        profileResponse.data &&
+        profileResponse.data._dividendSourceUrl
+    );
 
 
             if (url) {
