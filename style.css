@@ -1637,3 +1637,153 @@ footer small {
     }
 
 }
+
+
+
+/* =========================
+   INFO SECTION
+========================= */
+
+.info-content {
+    flex: 1;
+}
+
+.info-content h3 {
+    margin-bottom: 14px;
+}
+
+.info-content p {
+    line-height: 1.7;
+}
+
+
+/* INFO TOGGLE */
+
+.info-toggle {
+    margin-top: 18px;
+    padding: 11px 16px;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    background: var(--surface);
+    color: var(--text);
+
+    font: inherit;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.info-toggle:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.info-toggle:active {
+    transform: scale(0.98);
+}
+
+.info-arrow {
+    transition: transform 0.2s ease;
+}
+
+.info-toggle.active .info-arrow {
+    transform: rotate(180deg);
+}
+
+
+/* DETAIL */
+
+.info-details {
+    margin-top: 24px;
+}
+
+.info-feature-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 14px;
+}
+
+.info-feature {
+    padding: 17px;
+
+    border: 1px solid var(--border);
+    border-radius: 12px;
+
+    background: var(--surface);
+}
+
+.info-feature strong {
+    display: block;
+    margin-bottom: 7px;
+}
+
+.info-feature p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+
+/* DATA SOURCE */
+
+.info-source {
+    margin-top: 22px;
+    padding: 20px;
+
+    border-radius: 12px;
+
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+.info-source h4 {
+    margin-bottom: 12px;
+}
+
+.info-source p {
+    margin-bottom: 10px;
+}
+
+.info-disclaimer {
+    margin-top: 16px;
+    padding: 13px;
+
+    border-radius: 10px;
+
+    background: color-mix(
+        in srgb,
+        var(--primary) 8%,
+        var(--surface)
+    );
+}
+
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+
+    .info-feature-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .info-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+
+}
