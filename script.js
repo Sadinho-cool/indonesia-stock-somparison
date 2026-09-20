@@ -2367,20 +2367,41 @@ drawPriceChart =
 
 function setupInputs() {
 
-    [
-        $("stock1"),
-        $("stock2")
-    ]
-    .filter(Boolean)
-    .forEach(input => {
+    const stock1 = $("stock1");
+    const stock2 = $("stock2");
 
-        input.addEventListener(
+    if (stock1) {
+
+        stock1.addEventListener(
             "keydown",
             event => {
 
-                if (
-                    event.key === "Enter"
-                ) {
+                if (event.key === "Enter") {
+
+                    event.preventDefault();
+
+                    if (stock1.value.trim()) {
+
+                        stock2?.focus();
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+
+    if (stock2) {
+
+        stock2.addEventListener(
+            "keydown",
+            event => {
+
+                if (event.key === "Enter") {
+
+                    event.preventDefault();
 
                     compareStocks();
 
@@ -2389,7 +2410,7 @@ function setupInputs() {
             }
         );
 
-    });
+    }
 
 }
 
