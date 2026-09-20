@@ -409,25 +409,6 @@ function renderSummary(
         formatNumber(data.foreignSell)
     );
 
-
-    /*
-        Logo fallback.
-        Profile akan menggantinya jika tersedia.
-    */
-
-    const logo =
-        $(`logo${suffix}`);
-
-
-    if (logo) {
-
-        logo.textContent =
-            String(
-                data.symbol || symbol
-            ).substring(0, 1);
-
-    }
-
 }
 
 
@@ -532,12 +513,14 @@ function renderProfile(
 
     renderLogo(
         `profileLogo${suffix}`,
+        profile.logo,
         symbol
     );
 
 
     renderLogo(
         `logo${suffix}`,
+        profile.logo,
         symbol
     );
 
@@ -614,7 +597,7 @@ function renderWebsite(id, website) {
    LOGO
 ========================= */
 
-function renderLogo(id, symbol) {
+function renderLogo(id, logoUrl, symbol) {
 
     const container = $(id);
 
@@ -624,15 +607,16 @@ function renderLogo(id, symbol) {
 
     container.replaceChildren();
 
-    if (!symbol) {
-        container.textContent = "?";
+    if (!logoUrl) {
+        container.textContent =
+            String(symbol || "?").substring(0, 1).toUpperCase();
+
         return;
     }
 
     const image = document.createElement("img");
 
-    image.src =
-        `${API_URL}?symbol=${encodeURIComponent(symbol)}&type=logo`;
+    image.src = logoUrl;
 
     image.alt = `${symbol} company logo`;
 
@@ -643,7 +627,7 @@ function renderLogo(id, symbol) {
         image.remove();
 
         container.textContent =
-            String(symbol).substring(0, 1).toUpperCase();
+            String(symbol || "?").substring(0, 1).toUpperCase();
 
     };
 
