@@ -2428,5 +2428,41 @@ document.addEventListener(
 
         setupInputs();
 
+       setupInfoToggle();
+
     }
 );
+
+
+
+/* =========================
+   INFO TOGGLE
+========================= */
+
+function setupInfoToggle() {
+
+    const button = $("infoToggle");
+    const details = $("infoDetails");
+
+    if (!button || !details) return;
+
+    button.addEventListener("click", () => {
+
+        const isOpen =
+            button.getAttribute("aria-expanded") === "true";
+
+        button.setAttribute(
+            "aria-expanded",
+            String(!isOpen)
+        );
+
+        button.classList.toggle(
+            "active",
+            !isOpen
+        );
+
+        details.hidden = isOpen;
+
+    });
+
+}
