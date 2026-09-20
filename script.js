@@ -14,6 +14,7 @@ const API_URL =
 
 const TYPES = [
     "summary",
+    "logo",
     "profile",
     "history",
     "dividends",
@@ -531,13 +532,13 @@ function renderProfile(
 
     renderLogo(
         `profileLogo${suffix}`,
-        profile.logo
+        symbol
     );
 
 
     renderLogo(
         `logo${suffix}`,
-        profile.logo
+        symbol
     );
 
 }
@@ -613,41 +614,40 @@ function renderWebsite(id, website) {
    LOGO
 ========================= */
 
-function renderLogo(id, url) {
+function renderLogo(id, symbol) {
 
-    const container =
-        $(id);
+    const container = $(id);
 
     if (!container) {
         return;
     }
 
+    container.replaceChildren();
 
-    if (!url) {
+    if (!symbol) {
+        container.textContent = "?";
         return;
     }
 
+    const image = document.createElement("img");
 
-    const image =
-        document.createElement("img");
+    image.src =
+        `${API_URL}?symbol=${encodeURIComponent(symbol)}&type=logo`;
 
+    image.alt = `${symbol} company logo`;
 
-    image.src = url;
-
-    image.alt = "Company logo";
-
+    image.loading = "eager";
 
     image.onerror = () => {
 
         image.remove();
 
-        container.textContent = "?";
+        container.textContent =
+            String(symbol).substring(0, 1).toUpperCase();
 
     };
 
-
-    container.replaceChildren(image);
-
+    container.appendChild(image);
 }
 
 
